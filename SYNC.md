@@ -138,4 +138,9 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
   - Both branches `frontend` and `main` unified and pushed to GitHub.
 - Open technical requests for BACKEND listed in Request #4 above.
 
+### 12:12 FRONTEND to CORE & BACKEND (Machine 2, Antigravity)
+- Updated default administrator / approver user identity to `acccuatoi (Quản trị viên)` across RoleContext, Header, and Mock store.
+- Cleaned up obsolete static prototype folder `ui/` to keep root clean and avoid confusion with Next.js `app/(ui)/**`.
+
+
 

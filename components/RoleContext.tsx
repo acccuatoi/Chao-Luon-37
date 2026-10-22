@@ -11,20 +11,20 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType>({
   currentRole: 'approver',
-  currentUser: 'dave.approver@corp.internal',
+  currentUser: 'acccuatoi (Quản trị viên)',
   setCurrentRole: () => {},
   setCurrentUser: () => {}
 });
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [currentRole, setCurrentRole] = useState<string>('approver');
-  const [currentUser, setCurrentUser] = useState<string>('dave.approver@corp.internal');
+  const [currentUser, setCurrentUser] = useState<string>('acccuatoi (Quản trị viên)');
 
   useEffect(() => {
     if (currentRole === 'requester') {
       setCurrentUser('alice.requester@corp.internal');
     } else if (currentRole === 'approver') {
-      setCurrentUser('dave.approver@corp.internal');
+      setCurrentUser('acccuatoi (Quản trị viên)');
     } else {
       setCurrentUser('observer@corp.internal');
     }

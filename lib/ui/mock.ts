@@ -48,7 +48,7 @@ let mockRequests: Request[] = [
     },
     status: "pending",
     approvals: [
-      { approver: "dave.approver@corp.internal", at: new Date(Date.now() - 1200000).toISOString() }
+      { approver: "acccuatoi (Quản trị viên)", at: new Date(Date.now() - 1200000).toISOString() }
     ],
     requiredApprovals: 2,
     createdAt: new Date(Date.now() - 7200000).toISOString()
@@ -70,7 +70,7 @@ let mockRequests: Request[] = [
     status: "executed",
     approvals: [
       { approver: "carol.approver@corp.internal", at: new Date(Date.now() - 5400000).toISOString() },
-      { approver: "dave.approver@corp.internal", at: new Date(Date.now() - 3600000).toISOString() }
+      { approver: "acccuatoi (Quản trị viên)", at: new Date(Date.now() - 3600000).toISOString() }
     ],
     requiredApprovals: 2,
     createdAt: new Date(Date.now() - 10800000).toISOString()
@@ -133,10 +133,10 @@ let mockAuditEntries: AuditEntry[] = [
   {
     id: "aud-005",
     at: new Date(Date.now() - 3600000).toISOString(),
-    actor: "dave.approver@corp.internal",
+    actor: "acccuatoi (Quản trị viên)",
     event: "approved",
     requestId: "req-103",
-    detail: "Approver dave.approver@corp.internal granted final signature (2/2). Quorum threshold reached."
+    detail: "Approver acccuatoi (Quản trị viên) granted final signature (2/2). Quorum threshold reached."
   },
   {
     id: "aud-006",
@@ -157,10 +157,10 @@ let mockAuditEntries: AuditEntry[] = [
   {
     id: "aud-008",
     at: new Date(Date.now() - 1200000).toISOString(),
-    actor: "dave.approver@corp.internal",
+    actor: "acccuatoi (Quản trị viên)",
     event: "approved",
     requestId: "req-102",
-    detail: "Approver dave.approver@corp.internal granted approval (1/2). 1 approval remaining."
+    detail: "Approver acccuatoi (Quản trị viên) granted approval (1/2). 1 approval remaining."
   },
   {
     id: "aud-009",

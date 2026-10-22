@@ -33,7 +33,7 @@ export default function Header({ currentRole = "approver", onRoleChange, current
   const isRealApprover = hasRealmRole ? hasRealmRole("approver") : false;
   const isRealRequester = hasRealmRole ? hasRealmRole("requester") : true;
 
-  const displayUser = realUsername || currentUser || "dave.approver@corp.internal";
+  const displayUser = realUsername || currentUser || "acccuatoi (Quản trị viên)";
   const displayRole = authenticated ? (isRealApprover ? "approver" : "requester") : currentRole;
 
   useEffect(() => {
