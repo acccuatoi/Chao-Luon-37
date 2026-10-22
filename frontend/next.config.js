@@ -2,6 +2,8 @@
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 const nextConfig = {
+  // Hide the dev-mode issue badge so it does not show up in the demo recording.
+  devIndicators: false,
   async rewrites() {
     return [
       {
