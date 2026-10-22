@@ -79,3 +79,4 @@ TideCloak (Docker, port 8080) must be running for real token checks.
 - 15:55 BACKEND: if every LLM model fails (503/timeout), the offline parser drafts the proposal and the proposal's note says so (LLM_FALLBACK_TO_MOCK=false to block instead). Per-model timeout 12 s.
 - 16:10 BACKEND: payee is re-read from the user's own words (lib/server/payee.ts). A known name followed by other words ("AWS Cloud Services Offshore Ltd") is a different, unapproved payee, even if the model shortened it. Found in testing.
 - 16:15 BACKEND: a request with more than one amount is blocked (one payment per request), so the agent cannot silently drop payments.
+- 16:20 BACKEND: daily limit counts only PAID payments. Waiting requests no longer reserve budget; GET /api/requests adds `overLimit` (reason) to a pending request when paying it now would exceed the requester's limit, and approving it is refused (400). Contract: Request.overLimit?: string (add-only).

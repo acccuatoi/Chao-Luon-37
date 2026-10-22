@@ -22,6 +22,8 @@ export type Request = {
   createdAt: string;
   // Optional ciphertext produced in the browser with TideCloak doEncrypt. The backend and the agent never see plaintext. Added 13:10.
   encryptedMemo?: string;
+  // Set on a pending request when paying it now would exceed the requester's daily limit. Added 16:15.
+  overLimit?: string;
 };
 
 export type AuditEvent = "proposed" | "approved" | "executed" | "blocked" | "rejected";

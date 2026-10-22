@@ -92,6 +92,7 @@ export default function ApprovalsPage() {
   const whyNot = (req: Request): string | null => {
     if (!canAct) return 'Sign in to approve';
     if (!isApprover) return null;
+    if (req.overLimit) return 'Over the daily limit right now';
     if (req.requester === currentUser) return 'You asked for this one, so someone else must approve';
     if (req.approvals.some((a) => a.approver === currentUser)) return 'You already approved this';
     return null;

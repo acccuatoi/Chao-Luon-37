@@ -50,6 +50,7 @@ export function Seals({ req }: { req: Request }) {
 
 function sealText(req: Request) {
   const left = req.requiredApprovals - req.approvals.length;
+  if (req.status === 'pending' && req.overLimit) return <>Waiting, but it cannot be approved while it is over the daily limit.</>;
   if (req.status === 'blocked') return <>Stopped before anyone could approve it.</>;
   if (req.status === 'executed') {
     return (
@@ -66,7 +67,8 @@ function sealText(req: Request) {
   );
 }
 
-export function StatusBadge({ status }: { status: Request['status'] }) {
+export function StatusBadge({ status, overLimit }: { status: Request['status']; overLimit?: boolean }) {
+  if (status === 'pending' && overLimit) return <span className={`${styles.status} ${styles.statusBlocked}`}>Over daily limit</span>;
   const map = {
     pending: [styles.statusPending, 'Waiting for approval'],
     approved: [styles.statusPending, 'Waiting for approval'],
@@ -80,13 +82,13 @@ export function StatusBadge({ status }: { status: Request['status'] }) {
 /** A request as a payment slip. `actions` is rendered in the footer (approve buttons etc.). */
 export default function RequestSlip({ req, actions }: { req: Request; actions?: React.ReactNode }) {
   const p = req.proposal;
-  const tone = req.status === 'blocked' ? styles.slipBlocked : req.status === 'executed' ? styles.slipDone : '';
+  const tone = req.status === 'blocked' || req.overLimit ? styles.slipBlocked : req.status === 'executed' ? styles.slipDone : '';
   const riskCls = p?.risk === 'high' ? styles.riskHigh : p?.risk === 'medium' ? styles.riskMedium : styles.riskLow;
 
   return (
     <article className={`${styles.slip} ${tone}`}>
       <div className={styles.slipMeta}>
-        <StatusBadge status={req.status} />
+        <StatusBadge status={req.status} overLimit={!!req.overLimit} />
         <span className={styles.reqId}>{req.id}</span>
         <span>
           Asked by <strong>{req.requester}</strong> at {timeOf(req.createdAt)}
@@ -130,6 +132,7 @@ export default function RequestSlip({ req, actions }: { req: Request; actions?: 
       )}
 
       {req.status === 'blocked' && req.blockedReason && <div className={styles.reason}>{req.blockedReason}</div>}
+      {req.status === 'pending' && req.overLimit && <div className={styles.reason}>{req.overLimit}</div>}
 
       <div className={styles.slipFoot}>
         <div className={styles.row}>

@@ -20,7 +20,7 @@ export type Verdict = { ok: true; requiredApprovals: number } | { ok: false; rea
 
 const norm = (s: string) => s.normalize("NFC").trim().toLowerCase();
 
-/** Pure policy check. `spentLast24hUsd` = this requester's executed + still-pending amounts in the last 24h. */
+/** Pure policy check. `spentLast24hUsd` = this requester's PAID amounts in the last 24h (waiting ones do not count). */
 // Counts money amounts written in the request ("100 USD", "$100", "2,000 EUR").
 export function countAmounts(text: string): number {
   return (text.match(/(\$\s?\d[\d,]*(\.\d+)?|\d[\d,]*(\.\d+)?\s?(usd|dollars?|eur|euros?|vnd|gbp))/gi) ?? []).length;
@@ -42,7 +42,7 @@ export function evaluatePolicy(proposal: Proposal, spentLast24hUsd: number, requ
     reasons.push("amount is invalid");
   } else if (spentLast24hUsd + amount > POLICY.dailyCapUsd) {
     reasons.push(
-      `amount ($${amount}) plus $${spentLast24hUsd} you already committed in the last 24h (paid or waiting for approval) exceeds your rolling daily limit ($${POLICY.dailyCapUsd})`,
+      `amount ($${amount}) plus $${spentLast24hUsd} you already paid in the last 24h exceeds your rolling daily limit ($${POLICY.dailyCapUsd})`,
     );
   }
   if (reasons.length) return { ok: false, reason: `Blocked by policy: ${reasons.join("; ")}.` };

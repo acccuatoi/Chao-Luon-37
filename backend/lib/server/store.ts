@@ -46,7 +46,7 @@ const POLICY_ACTOR = "Policy Guard";
 const GATE_ACTOR = "Quorum Gate";
 
 // Strip internal fields before anything leaves the API.
-const pub = ({ requesterId: _omit, ...r }: StoredRequest): Request => r;
+const pub = ({ requesterId: _omit, executedAt: _e, ...r }: StoredRequest & { executedAt?: string }): Request => r;
 
 // ---- Tamper-evident audit log (hash chain) ----
 const entryHash = (e: Omit<AuditEntry, "hash">) =>
@@ -80,31 +80,40 @@ export function verifyAudit(): ChainCheck {
 }
 
 // Visibility: approvers see every request (they must review them); everyone else sees only their own.
+// Pending requests get `overLimit` when paying them now would break the requester's daily limit.
 export const listRequests = (viewer: Actor, isApprover: boolean): Request[] =>
   [...db.requests]
     .filter((r) => isApprover || r.requesterId === viewer.id)
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-    .map(pub);
+    .map((r) => withOverLimit(r));
 
-// Approvers see the full log; others see only entries about their own requests or made by them.
 export const listAudit = (viewer: Actor, isApprover: boolean): AuditEntry[] => {
   const own = new Set(db.requests.filter((r) => r.requesterId === viewer.id).map((r) => r.id));
   return [...db.audit].reverse().filter((e) => isApprover || own.has(e.requestId) || e.actor === viewer.name);
 };
 
-// Each account has its own rolling 24h budget: only this requester's paid + waiting payments count.
-function spentLast24h(requesterId: string): number {
+// Each account has its own rolling 24h budget. Only PAID (approved and executed) payments count; waiting
+// requests do not reserve budget. A waiting request turns "over limit" once paid ones leave too little room.
+function paidLast24h(requesterId: string): number {
   const since = Date.now() - DAY_MS;
   return db.requests
-    .filter(
-      (r) =>
-        r.requesterId === requesterId &&
-        (r.status === "executed" || r.status === "pending") &&
-        r.proposal &&
-        Date.parse(r.createdAt) >= since,
-    )
+    .filter((r) => r.requesterId === requesterId && r.status === "executed" && r.proposal)
+    .filter((r) => Date.parse((r as StoredRequest & { executedAt?: string }).executedAt ?? r.createdAt) >= since)
     .reduce((sum, r) => sum + Number(r.proposal!.params.amount ?? 0), 0);
 }
+
+function overLimitReason(r: StoredRequest): string | undefined {
+  if (r.status !== "pending" || !r.proposal) return undefined;
+  const paid = paidLast24h(r.requesterId);
+  const amount = Number(r.proposal.params.amount ?? 0);
+  if (paid + amount <= POLICY.dailyCapUsd) return undefined;
+  return `Over the daily limit now: $${amount} plus $${paid} already paid for ${r.requester} in the last 24h exceeds $${POLICY.dailyCapUsd}. It cannot be approved until earlier payments fall out of the 24h window.`;
+}
+
+const withOverLimit = (r: StoredRequest): Request => {
+  const over = overLimitReason(r);
+  return over ? { ...pub(r), overLimit: over } : pub(r);
+};
 
 export function createRequest(
   requester: Actor,
@@ -122,7 +131,7 @@ export function createRequest(
       ? `Blocked: the agent's reply could not be used (${rejectedReason.replace(/^agent error: /, "")}). Nothing was sent to approvers; try again.`
       : `Blocked: AI output rejected by schema check (${rejectedReason ?? "invalid output"}).`;
   } else {
-    const v = evaluatePolicy(proposal, spentLast24h(requester.id), text);
+    const v = evaluatePolicy(proposal, paidLast24h(requester.id), text);
     if (v.ok) requiredApprovals = v.requiredApprovals;
     else {
       status = "blocked";
@@ -169,16 +178,22 @@ export function approve(id: string, approver: Actor): ApproveResult {
     log(approver.name, "rejected", id, "Duplicate approval rejected.");
     return { ok: false, code: 400, error: "You have already approved this request" };
   }
+  const over = overLimitReason(req);
+  if (over) {
+    log(approver.name, "rejected", id, `Approval refused: ${over}`);
+    return { ok: false, code: 400, error: over };
+  }
   req.approvals.push({ approver: approver.name, at: new Date().toISOString() });
   log(approver.name, "approved", id, `Approval ${req.approvals.length}/${req.requiredApprovals} by ${approver.name}.`);
   if (req.approvals.length >= req.requiredApprovals) {
     // The only place an action is carried out, and only after quorum. The payment itself is SIMULATED.
     req.status = "executed";
+    (req as StoredRequest & { executedAt?: string }).executedAt = new Date().toISOString();
     const p = req.proposal!.params;
     log(GATE_ACTOR, "executed", id, `Quorum ${req.approvals.length}/${req.requiredApprovals} reached. SIMULATED transfer of ${p.amount} ${p.currency} to ${p.payee} (no real funds moved).`);
   }
   save();
-  return { ok: true, request: pub(req) };
+  return { ok: true, request: withOverLimit(req) };
 }
 
 /** Demo helper: wipe all data. The reset itself starts the new audit chain so it stays visible. */

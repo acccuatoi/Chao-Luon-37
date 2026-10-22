@@ -25,9 +25,14 @@ export default function NewRequestPage() {
 
   useEffect(() => {
     if (!canAct) return;
-    fetchRequests()
-      .then((list) => setMine(list.filter((r) => r.requester === currentUser)))
-      .catch(() => {});
+    // Poll so status changes made by approvers (paid, over the limit) show up without a reload.
+    const load = () =>
+      fetchRequests()
+        .then((list) => setMine(list.filter((r) => r.requester === currentUser)))
+        .catch(() => {});
+    load();
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
   }, [canAct, authenticated, currentUser]);
 
   const allowed = canAct && (isMock || devBypass || hasRole('requester'));
@@ -105,7 +110,7 @@ export default function NewRequestPage() {
           <h2 className={styles.label} style={{ margin: 0 }}>Rules in force</h2>
           <div>
             <div className={styles.ruleFigure}>{policy ? money(policy.dailyCapUsd) : '—'}</div>
-            <div className={styles.ruleCaption}>Per person: your paid plus waiting payments in any 24 hours</div>
+            <div className={styles.ruleCaption}>Per person: payments already approved in any 24 hours. Waiting ones turn red if approving them would go over.</div>
           </div>
           <div>
             <div className={styles.ruleFigure}>{needed} {needed === 1 ? 'approver' : 'approvers'}</div>
