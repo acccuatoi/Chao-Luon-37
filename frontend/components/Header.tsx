@@ -1,196 +1,107 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useRoleContext } from './RoleContext';
-import { isMockMode, fetchStatus } from '../lib/ui/api';
-import { ApiStatus } from '../lib/types';
+import { useRoleContext, TestRole } from './RoleContext';
+import { useApiStatus } from './useApiStatus';
 import styles from './styles.module.css';
+
+const NAV = [
+  { href: '/', label: 'New request' },
+  { href: '/queue', label: 'Approvals' },
+  { href: '/audit', label: 'Audit log' },
+];
 
 export default function Header() {
   const pathname = usePathname();
-  const {
-    authenticated,
-    currentUser,
-    userRoles,
-    mockRole,
-    setMockRole,
-    login,
-    logout
-  } = useRoleContext();
+  const { authenticated, isMock, devBypass, currentUser, userRoles, testRole, setTestRole, login, logout } =
+    useRoleContext();
+  const { status, offline } = useApiStatus();
 
-  const [mockActive, setMockActive] = useState<boolean>(true);
-  const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
-  const [statusError, setStatusError] = useState<boolean>(false);
+  const backendPill = isMock
+    ? { cls: styles.pillWarn, text: 'Mock data', title: 'NEXT_PUBLIC_USE_MOCK=true: nothing is sent to the backend' }
+    : offline
+    ? { cls: styles.pillBad, text: 'Backend offline', title: 'Cannot reach the API on port 3001' }
+    : status?.mode === 'live'
+    ? { cls: styles.pillOk, text: 'TideCloak live', title: 'Every API call is checked against a TideCloak token' }
+    : { cls: styles.pillWarn, text: 'Dev bypass', title: 'Backend runs with DEV_AUTH_BYPASS=true: test identities, no token check' };
 
-  useEffect(() => {
-    setMockActive(isMockMode());
-    fetchStatus()
-      .then((s) => {
-        setApiStatus(s);
-        setStatusError(false);
-      })
-      .catch((err) => {
-        console.warn("Could not fetch API status:", err);
-        setStatusError(true);
-      });
-  }, []);
-
-  const isLiveMode = !mockActive && apiStatus?.mode === 'live';
-  const agentType = apiStatus?.agent;
+  const agentPill = status?.agent === 'llm'
+    ? { cls: styles.pillOk, text: 'LLM agent', title: 'Proposals are drafted by a language model' }
+    : { cls: styles.pillWarn, text: 'Mock agent (no AI)', title: 'Proposals come from a keyword parser, not a model' };
 
   return (
     <>
-      {mockActive && (
-        <aside className={styles.bannerMock} role="region" aria-label="Mock Data Notice">
-          <span>⚠️ MOCK DATA ACTIVE (NEXT_PUBLIC_USE_MOCK=true)</span>
-          <span style={{ fontWeight: 400, opacity: 0.85 }}>| Simulated Offline Governance</span>
-        </aside>
+      {isMock && (
+        <div className={styles.strip} role="status">
+          Mock data: this screen is not connected to the backend. Set NEXT_PUBLIC_USE_MOCK=false for the live demo.
+        </div>
       )}
+      <header className={styles.topbar}>
+        <div className={styles.topbarInner}>
+          <Link href="/" className={styles.brand}>
+            <img src="/mascot.jpg" alt="" className={styles.brandLogo} />
+            <span>
+              <span className={styles.brandName}>SentinelAgent</span>
+              <span className={styles.brandBy}>by team Chao Luon 37</span>
+            </span>
+          </Link>
 
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <div className={styles.brandGroup}>
-            <Link href="/" className={styles.brandTitle}>
-              <img
-                src="/mascot.jpg"
-                alt="Cháo Lươn 37 Mascot"
-                className={styles.mascotHeaderLogo}
-              />
-              <span>SentinelAgent</span>
-              <span className={styles.brandSub}>Cháo Lươn 37</span>
-            </Link>
-
-            <nav className={styles.navLinks} aria-label="Main Navigation">
+          <nav className={styles.nav} aria-label="Main">
+            {NAV.map((item) => (
               <Link
-                href="/"
-                className={`${styles.navLink} ${pathname === '/' ? styles.navLinkActive : ''}`}
+                key={item.href}
+                href={item.href}
+                className={`${styles.navLink} ${pathname === item.href ? styles.navLinkActive : ''}`}
+                aria-current={pathname === item.href ? 'page' : undefined}
               >
-                Submit Request
+                {item.label}
               </Link>
-              <Link
-                href="/queue"
-                className={`${styles.navLink} ${pathname === '/queue' ? styles.navLinkActive : ''}`}
-              >
-                Approval Queue
-              </Link>
-              <Link
-                href="/audit"
-                className={`${styles.navLink} ${pathname === '/audit' ? styles.navLinkActive : ''}`}
-              >
-                Audit Log
-              </Link>
-            </nav>
-          </div>
+            ))}
+          </nav>
 
-          <div className={styles.headerActions}>
-            {/* Status Badges Group (Requirement B7) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {/* Backend Mode Badge */}
-              <span
-                className={`${styles.statusBadge} ${
-                  statusError
-                    ? styles.statusSimulated
-                    : isLiveMode
-                    ? styles.statusLive
-                    : styles.statusSimulated
-                }`}
-                title={
-                  statusError
-                    ? "Backend is offline (port 3001)"
-                    : isLiveMode
-                    ? "Connected to Live TideCloak verification on :3001"
-                    : "Simulated verification / Dev mode"
-                }
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    backgroundColor: 'currentColor'
-                  }}
-                />
-                {statusError
-                  ? 'Backend Offline'
-                  : isLiveMode
-                  ? 'Live TideCloak'
-                  : 'Simulated'}
-              </span>
-
-              {/* Agent Type Badge */}
-              {apiStatus && (
-                <span
-                  className={styles.statusBadge}
-                  style={{
-                    background: agentType === 'llm' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(148, 163, 184, 0.15)',
-                    color: agentType === 'llm' ? '#38bdf8' : '#94a3b8',
-                    border: agentType === 'llm' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(148, 163, 184, 0.25)'
-                  }}
-                  title={agentType === 'llm' ? "LLM Agent (Claude/Anthropic)" : "Mock Agent (keyword rules, no LLM API key)"}
-                >
-                  {agentType === 'llm' ? '🤖 LLM Agent' : '⚙️ Mock Agent (No AI)'}
-                </span>
-              )}
-            </div>
-
-            {/* Current User & Roles (Requirements B3, B12) */}
-            <div className={styles.userBadge}>
-              <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={currentUser}>
-                {currentUser}
-              </span>
-
-              {/* Show every role the user holds */}
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                {userRoles.map((role) => (
-                  <span
-                    key={role}
-                    className={`${styles.roleChip} ${
-                      role === 'approver' ? styles.roleChipApprover : ''
-                    }`}
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
-
-              {/* Role Toggle for testing (Visible in mock mode or dev bypass when not authenticated) */}
-              {(mockActive || !authenticated) && (
-                <select
-                  className={styles.roleSelect}
-                  value={mockRole}
-                  onChange={(e) => setMockRole(e.target.value)}
-                  aria-label="Switch Test Role"
-                  title="Switch role in mock mode to test permissions"
-                >
-                  <option value="approver">Test: Approver</option>
-                  <option value="requester">Test: Requester</option>
-                  <option value="both">Test: Both Roles</option>
-                  <option value="observer">Test: Observer</option>
-                </select>
-              )}
-            </div>
-
-            {/* Log In / Log Out Button */}
-            {authenticated ? (
-              <button
-                type="button"
-                onClick={logout}
-                className={`${styles.btnAuth} ${styles.btnAuthOut}`}
-              >
-                Log Out
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={login}
-                className={styles.btnPrimary}
-                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-              >
-                Log In
-              </button>
+          <div className={styles.topbarRight}>
+            <span className={`${styles.pill} ${backendPill.cls}`} title={backendPill.title}>{backendPill.text}</span>
+            {!isMock && status && (
+              <span className={`${styles.pill} ${agentPill.cls}`} title={agentPill.title}>{agentPill.text}</span>
             )}
+
+            <div className={styles.who}>
+              {isMock || devBypass ? (
+                <>
+                  <span className={styles.whoName}>{currentUser}</span>
+                  <select
+                    className={styles.roleSelect}
+                    value={testRole}
+                    onChange={(e) => setTestRole(e.target.value as TestRole)}
+                    aria-label="Test identity"
+                    title="Test identity (mock or dev bypass only)"
+                  >
+                    <option value="requester">alice (requester)</option>
+                    <option value="approver">bob (approver)</option>
+                    <option value="both">admin (both roles)</option>
+                    <option value="observer">observer (no role)</option>
+                  </select>
+                </>
+              ) : authenticated ? (
+                <>
+                  <span className={styles.whoName} title={currentUser}>{currentUser}</span>
+                  {userRoles.length ? (
+                    userRoles.map((r) => <span key={r} className={styles.roleTag}>{r}</span>)
+                  ) : (
+                    <span className={styles.roleTag}>no role</span>
+                  )}
+                  <button type="button" className={`${styles.btn} ${styles.btnOnDark} ${styles.btnSmall}`} onClick={logout}>
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={`${styles.btn} ${styles.btnLight} ${styles.btnSmall}`} onClick={login}>
+                  Sign in with TideCloak
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>

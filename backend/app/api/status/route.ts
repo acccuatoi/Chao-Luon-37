@@ -11,7 +11,7 @@ export async function GET() {
   const body: ApiStatus = {
     mode: devBypass() ? "simulated" : "live",
     agent: agentMode(),
-    policy: { dailyCapUsd: POLICY.dailyCapUsd, whitelist: POLICY.whitelist },
+    policy: { dailyCapUsd: POLICY.dailyCapUsd, whitelist: POLICY.whitelist, requiredApprovals: POLICY.requiredApprovals },
   };
   return NextResponse.json(body);
 }

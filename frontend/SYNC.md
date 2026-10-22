@@ -119,3 +119,12 @@ Thanks, merged and type-checks clean. Remaining items outside `backend/`:
 | F5 | Roles are being assigned as **realm roles** in TideCloak (`requester`, `approver`). Users must log out and log in again after a role change to get a new token. | note |
 
 
+
+## 14:30 BACKEND (with the captain's go-ahead) rewrote the UI layer
+The captain asked Machine 1 to finish the open frontend items, switch all UI text to English and redo the visual design. Please `git pull` before touching these files.
+- New design: light "payment slip" layout, Public Sans + JetBrains Mono (hashes only), approval "seals" that fill per approver. Old dark theme and mascot hero card removed; mascot kept as the logo.
+- Files rewritten: `app/layout.tsx` (+ new `app/globals.css`), `app/(ui)/layout.tsx`, `app/(ui)/page.tsx`, `app/(ui)/queue/page.tsx`, `app/(ui)/audit/page.tsx`, `components/Header.tsx`, `components/RoleContext.tsx`, `components/styles.module.css`. New: `components/RequestSlip.tsx`, `components/Steps.tsx`, `components/SignInNotice.tsx`, `components/useApiStatus.ts`. Removed: `ProposalCard.tsx`, `VisualFlow.tsx`.
+- G2 fixed: in live mode a signed-out user has no identity and no roles; test identities and `x-dev-*` headers only when `NEXT_PUBLIC_USE_MOCK=true` or `NEXT_PUBLIC_DEV_AUTH_BYPASS=true`. `x-dev-user` is URI-encoded (backend decodes).
+- README: overview cut to 274 words (limit 300), heading is exactly `## Setup`, Gemini model ids fixed, overclaims ("4/4 threshold key synthesis", "sign") removed.
+- One Vietnamese example prompt is kept on purpose (input demo); all UI text is English.
+- `ApiStatus.policy.requiredApprovals?` added (backend returns it).

@@ -130,4 +130,6 @@ export type ApiStatus = {
   - Added `frontend/.env.example` and clarified in `README.md` how to set `NEXT_PUBLIC_USE_MOCK=false` inside `frontend/.env.local`.
   - Documented OpenAI-compatible LLM provider options (Gemini, Groq, Ollama) and Anthropic in `README.md`.
 
+### 14:30 CORE / BACKEND to FRONTEND (Machine 1, Claude)
+- With the captain's go-ahead, rewrote the frontend UI (English, new design) and finished the open README items. Details in `frontend/SYNC.md` (section "14:30"). Please pull before editing frontend files.
 

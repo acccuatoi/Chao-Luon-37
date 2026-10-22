@@ -4,60 +4,46 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { useTideCloak } from '@tidecloak/nextjs';
 import { isMockMode, setAuthHeaderProvider } from '../lib/ui/api';
 
+// Identity rules:
+// - Live mode: user and roles come only from the TideCloak token. Not signed in = no identity, no roles.
+// - Mock mode (NEXT_PUBLIC_USE_MOCK=true) or dev bypass (NEXT_PUBLIC_DEV_AUTH_BYPASS=true, backend DEV_AUTH_BYPASS=true):
+//   a test identity chosen in the header is used, and sent as x-dev-user / x-dev-role headers (dev bypass only).
+export const isDevBypass = (): boolean => process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
+
+export type TestRole = 'requester' | 'approver' | 'both' | 'observer';
+
+const TEST_USERS: Record<TestRole, string> = {
+  requester: 'alice',
+  approver: 'bob',
+  both: 'admin',
+  observer: 'observer',
+};
+
 export interface RoleContextType {
-  // Auth state
   authenticated: boolean;
   isInitializing: boolean;
   isMock: boolean;
-
-  // Identity & Roles
+  devBypass: boolean;
+  /** True when the UI may call actions: signed in, or using a test identity. */
+  canAct: boolean;
   currentUser: string;
-  userRoles: string[]; // List of all roles held: ['requester'], ['approver'], or both
+  userRoles: string[];
   hasRole: (role: string) => boolean;
-
-  // Mock / Dev toggles
-  mockRole: string;
-  setMockRole: (role: string) => void;
-  mockUser: string;
-  setMockUser: (user: string) => void;
-
-  // Auth actions
+  testRole: TestRole;
+  setTestRole: (role: TestRole) => void;
   login: () => void;
   logout: () => void;
-  getAuthHeaders: () => Promise<Record<string, string>>;
 }
 
-const defaultContext: RoleContextType = {
-  authenticated: false,
-  isInitializing: false,
-  isMock: true,
-  currentUser: 'acccuatoi (Quản trị viên)',
-  userRoles: ['approver'],
-  hasRole: (r: string) => r === 'approver',
-  mockRole: 'approver',
-  setMockRole: () => {},
-  mockUser: 'acccuatoi (Quản trị viên)',
-  setMockUser: () => {},
-  login: () => {},
-  logout: () => {},
-  getAuthHeaders: async () => ({})
-};
-
-const RoleContext = createContext<RoleContextType>(defaultContext);
+const RoleContext = createContext<RoleContextType | null>(null);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [isMock, setIsMock] = useState<boolean>(true);
-  const [mockRole, setMockRole] = useState<string>('both');
-  const [mockUser, setMockUser] = useState<string>('acccuatoi (Quản trị viên)');
+  const [isMock] = useState<boolean>(() => isMockMode());
+  const devBypass = !isMock && isDevBypass();
+  const useTestIdentity = isMock || devBypass;
+  const [testRole, setTestRole] = useState<TestRole>('both');
 
-  // Safely consume TideCloak hook
-  let tideAuth: any = {};
-  try {
-    tideAuth = useTideCloak();
-  } catch (err) {
-    // Graceful fallback if outside TideCloak context
-  }
-
+  const tide = useTideCloak() as any;
   const {
     authenticated = false,
     isInitializing = false,
@@ -68,99 +54,56 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     hasRealmRole,
     hasClientRole,
     getValueFromIdToken,
-    getValueFromToken
-  } = tideAuth;
+    getValueFromToken,
+  } = tide ?? {};
 
-  // Check mock mode on mount
-  useEffect(() => {
-    setIsMock(isMockMode());
-  }, []);
+  const hasRole = useCallback(
+    (role: string): boolean => {
+      if (useTestIdentity) {
+        if (testRole === 'both') return role === 'requester' || role === 'approver';
+        return testRole === role;
+      }
+      if (!authenticated) return false;
+      const inRealm = typeof hasRealmRole === 'function' ? hasRealmRole(role) : false;
+      const inClient = typeof hasClientRole === 'function' ? hasClientRole(role) : false;
+      return Boolean(inRealm || inClient);
+    },
+    [useTestIdentity, testRole, authenticated, hasRealmRole, hasClientRole],
+  );
 
-  // Update default mock user when mock role changes
-  useEffect(() => {
-    if (mockRole === 'requester') {
-      setMockUser('alice.requester@corp.internal');
-    } else if (mockRole === 'approver') {
-      setMockUser('acccuatoi (Quản trị viên)');
-    } else if (mockRole === 'both') {
-      setMockUser('acccuatoi (Quản trị viên)');
-    } else {
-      setMockUser('observer@corp.internal');
-    }
-  }, [mockRole]);
+  const userRoles = useMemo<string[]>(
+    () => ['requester', 'approver'].filter((r) => hasRole(r)),
+    [hasRole],
+  );
 
-  // Check role helper across realm and client roles (Requirement B12 & B9)
-  const hasRole = useCallback((role: string): boolean => {
-    if (isMock || !authenticated) {
-      if (mockRole === 'both') return role === 'requester' || role === 'approver';
-      return mockRole === role;
-    }
-    const inRealm = typeof hasRealmRole === 'function' ? hasRealmRole(role) : false;
-    const inClient = typeof hasClientRole === 'function' ? hasClientRole(role) : false;
-    return Boolean(inRealm || inClient);
-  }, [isMock, mockRole, authenticated, hasRealmRole, hasClientRole]);
-
-  // Compute all roles the user holds
-  const userRoles = useMemo<string[]>(() => {
-    if (isMock || !authenticated) {
-      if (mockRole === 'both') return ['requester', 'approver'];
-      return [mockRole];
-    }
-    const roles: string[] = [];
-    if (hasRole('requester')) roles.push('requester');
-    if (hasRole('approver')) roles.push('approver');
-    if (hasRole('offline_access')) roles.push('offline_access');
-    return roles.length > 0 ? roles : ['authenticated'];
-  }, [isMock, mockRole, authenticated, hasRole]);
-
-  // Compute current display username
   const currentUser = useMemo<string>(() => {
-    if (isMock || !authenticated) return mockUser;
+    if (useTestIdentity) return TEST_USERS[testRole];
+    if (!authenticated) return '';
+    const read = (k: string) =>
+      (typeof getValueFromIdToken === 'function' && getValueFromIdToken(k)) ||
+      (typeof getValueFromToken === 'function' && getValueFromToken(k));
+    return read('preferred_username') || read('name') || read('email') || 'TideCloak user';
+  }, [useTestIdentity, testRole, authenticated, getValueFromIdToken, getValueFromToken]);
 
-    const preferred = (typeof getValueFromIdToken === 'function' && getValueFromIdToken('preferred_username')) ||
-                      (typeof getValueFromToken === 'function' && getValueFromToken('preferred_username'));
-    const name = typeof getValueFromIdToken === 'function' && getValueFromIdToken('name');
-    const email = typeof getValueFromIdToken === 'function' && getValueFromIdToken('email');
-
-    return preferred || name || email || 'TideCloak User';
-  }, [isMock, mockUser, authenticated, getValueFromIdToken, getValueFromToken]);
-
-  // Function to provide auth headers for API calls (Requirements B2, B9)
   const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = {};
-
+    if (devBypass) {
+      // Header values must be ISO-8859-1; the backend decodes this.
+      headers['x-dev-user'] = encodeURIComponent(currentUser);
+      headers['x-dev-role'] = userRoles.join(',');
+      return headers;
+    }
     if (!isMock && authenticated) {
       try {
-        let currentToken: string | null = null;
-        if (typeof getToken === 'function') {
-          currentToken = await getToken();
-        } else {
-          currentToken = token;
-        }
-
-        if (currentToken) {
-          headers['Authorization'] = `Bearer ${currentToken}`;
-        }
+        const fresh = typeof getToken === 'function' ? await getToken() : token;
+        if (fresh) headers['Authorization'] = `Bearer ${fresh}`;
       } catch (err) {
-        console.warn('Failed to retrieve fresh TideCloak token', err);
+        console.warn('Could not get a fresh TideCloak token', err);
       }
     }
-
-    // Always send x-dev headers when in mock mode or for dev bypass fallback
-    if (isMock || !authenticated) {
-      // Ensure ASCII-safe ByteString for browser fetch headers (strip non-ASCII like 'Quản trị viên')
-      const asciiUser = currentUser.includes('acccuatoi')
-        ? 'acccuatoi'
-        : currentUser.replace(/[^\x00-\x7F]/g, '').trim() || 'alice.requester';
-      headers['x-dev-user'] = asciiUser;
-      const rolesToSend = userRoles.filter(r => r === 'requester' || r === 'approver').join(',') || mockRole;
-      headers['x-dev-role'] = rolesToSend;
-    }
-
     return headers;
-  }, [isMock, authenticated, getToken, token, currentUser, userRoles, mockRole]);
+  }, [devBypass, isMock, authenticated, getToken, token, currentUser, userRoles]);
 
-  // Register header provider with api.ts client
   useEffect(() => {
     setAuthHeaderProvider(getAuthHeaders);
   }, [getAuthHeaders]);
@@ -169,25 +112,22 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     authenticated,
     isInitializing,
     isMock,
+    devBypass,
+    canAct: useTestIdentity || authenticated,
     currentUser,
     userRoles,
     hasRole,
-    mockRole,
-    setMockRole,
-    mockUser,
-    setMockUser,
-    login: () => (login ? login() : undefined),
-    logout: () => (logout ? logout() : undefined),
-    getAuthHeaders
+    testRole,
+    setTestRole,
+    login: () => (typeof login === 'function' ? login() : undefined),
+    logout: () => (typeof logout === 'function' ? logout() : undefined),
   };
 
-  return (
-    <RoleContext.Provider value={value}>
-      {children}
-    </RoleContext.Provider>
-  );
+  return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }
 
-export function useRoleContext() {
-  return useContext(RoleContext);
+export function useRoleContext(): RoleContextType {
+  const ctx = useContext(RoleContext);
+  if (!ctx) throw new Error('useRoleContext must be used inside RoleProvider');
+  return ctx;
 }

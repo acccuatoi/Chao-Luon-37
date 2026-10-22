@@ -39,5 +39,5 @@ export type AuditEntry = {
 export type ApiStatus = {
   mode: "live" | "simulated";
   agent?: "llm" | "mock";
-  policy: { dailyCapUsd: number; whitelist: string[] };
+  policy: { dailyCapUsd: number; whitelist: string[]; requiredApprovals?: number };
 };

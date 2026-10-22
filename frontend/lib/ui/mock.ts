@@ -35,20 +35,20 @@ let mockRequests: Request[] = [
   {
     id: "req-102",
     requester: "linh.nguyen@corp.internal",
-    text: "Thanh toán tiền thuê văn phòng định kỳ quý 4 cho Công ty Bất động sản Hòa Bình",
+    text: "Pay the Q4 office rent of 600 USD to Office Lease Corp",
     proposal: {
       action: "transfer_funds",
       params: {
         amount: 600,
         currency: "USD",
-        payee: "Công ty Bất động sản Hòa Bình"
+        payee: "Office Lease Corp"
       },
-      reason: "Hợp đồng thuê mặt bằng văn phòng làm việc định kỳ",
+      reason: "Quarterly office lease",
       risk: "low"
     },
     status: "pending",
     approvals: [
-      { approver: "acccuatoi (Quản trị viên)", at: new Date(Date.now() - 1200000).toISOString() }
+      { approver: "bob", at: new Date(Date.now() - 1200000).toISOString() }
     ],
     requiredApprovals: 2,
     createdAt: new Date(Date.now() - 7200000).toISOString()
@@ -70,7 +70,7 @@ let mockRequests: Request[] = [
     status: "executed",
     approvals: [
       { approver: "carol.approver@corp.internal", at: new Date(Date.now() - 5400000).toISOString() },
-      { approver: "acccuatoi (Quản trị viên)", at: new Date(Date.now() - 3600000).toISOString() }
+      { approver: "bob", at: new Date(Date.now() - 3600000).toISOString() }
     ],
     requiredApprovals: 2,
     createdAt: new Date(Date.now() - 10800000).toISOString()
@@ -128,15 +128,15 @@ let mockAuditEntries: AuditEntry[] = [
     actor: "carol.approver@corp.internal",
     event: "approved",
     requestId: "req-103",
-    detail: "Approver carol.approver@corp.internal verified invoice and granted signature (1/2)."
+    detail: "Approver carol.approver@corp.internal approved (1/2)."
   },
   {
     id: "aud-005",
     at: new Date(Date.now() - 3600000).toISOString(),
-    actor: "acccuatoi (Quản trị viên)",
+    actor: "bob",
     event: "approved",
     requestId: "req-103",
-    detail: "Approver acccuatoi (Quản trị viên) granted final signature (2/2). Quorum threshold reached."
+    detail: "Approver bob approved (2/2). Quorum reached."
   },
   {
     id: "aud-006",
@@ -152,15 +152,15 @@ let mockAuditEntries: AuditEntry[] = [
     actor: "SentinelAgent (AI)",
     event: "proposed",
     requestId: "req-102",
-    detail: "AI proposed payment of $600 USD to Công ty Bất động sản Hòa Bình."
+    detail: "AI proposed payment of $600 USD to Office Lease Corp."
   },
   {
     id: "aud-008",
     at: new Date(Date.now() - 1200000).toISOString(),
-    actor: "acccuatoi (Quản trị viên)",
+    actor: "bob",
     event: "approved",
     requestId: "req-102",
-    detail: "Approver acccuatoi (Quản trị viên) granted approval (1/2). 1 approval remaining."
+    detail: "Approver bob granted approval (1/2). 1 approval remaining."
   },
   {
     id: "aud-009",

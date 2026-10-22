@@ -4,30 +4,29 @@
 
 ## Project overview
 
-_One-sentence description: An AI agent guardrail where the agent can only propose actions; execution needs approval from two distinct TideCloak-authenticated humans, enforced by policy and logged in a tamper-evident audit chain._
+_An AI agent that can only propose payments: nothing runs until two different TideCloak-authenticated people approve, every step is checked against policy, and every event lands in a tamper-evident audit log._
 
 Built with [TideCloak](https://tide.org/tidecloak?utm_source=github&utm_medium=readme&utm_campaign=unlocked).
 
 ### 1. Vision & originality
-Autonomous AI agents are revolutionizing workflows, but granting them raw execution power or unilateral access creates catastrophic security risks. **SentinelAgent (Cháo Lươn 37)** enforces a strict separation of powers: AI agents can *only* formulate proposals in natural language; execution requires multi-party human quorum approval authenticated via TideCloak.
+Teams want AI agents to handle payments, but an agent holding an API key is a single point of failure. SentinelAgent splits the power: the agent drafts, people decide.
 
 ### 2. Trust constraint insight
-Delegating high-stakes tasks to AI agents is blocked by fear of prompt injection, hallucinations, and rogue actions. Organizations cannot safely give agents unilateral control over payments or data because traditional architectures provide all-or-nothing execution with static API keys that can be hijacked.
+The blocker is not the model's skill but its authority. A prompt injection, a hallucination or a stolen key turns an agent with execution rights into an attacker. Today's tools give all-or-nothing access.
 
 ### 3. Value & impact
-Enterprises can safely unleash autonomous agents for financial workflows and operations. Even if an agent's LLM is completely jailbroken by malicious user prompts, the agent holds no execution keys and cannot unilaterally disburse funds or export data.
+Finance teams can let an agent prepare payments in plain English or Vietnamese while keeping control. Even a fully jailbroken agent cannot pay anyone: it has no keys, and its output must match the one allowed action.
 
 ### 4. Why TideCloak matters
-TideCloak provides robust identity and role verification (`requester`, `approver`). Every request is verified via TideCloak access tokens. Multi-party quorum ensures that distinct authorized humans must review and sign proposals before any simulated action is executed, with all events recorded in a SHA-256 tamper-evident hash chain. *(Decentralized 4/4 threshold key synthesis and hardware enclave E2EE are planned for the production roadmap).*
+TideCloak decides who may ask and who may approve (`requester`, `approver` roles) and the backend verifies a TideCloak token on every call. Approvals must come from two distinct accounts, never the requester. Using TideCloak's own quorum-enforced signing and E2EE is our next step.
 
 ### 5. Prototype & storytelling
-Our prototype demonstrates an interactive Governance & Quorum Console:
-1. **Legitimate Task:** AI formulates a structured payment proposal within daily cap and whitelist; pending 2 human approvals.
-2. **Vietnamese Language Support:** Natural language task in Vietnamese is accurately structured into formal action parameters.
-3. **Policy Breach:** Transfer exceeding rolling 24h cap ($5,000) or targeting an unapproved payee is immediately blocked by Policy Guard.
-4. **Prompt Injection Jailbreak:** Malicious instructions attempting unauthorized data exfiltration fail strict schema validation and are quarantined before reaching humans.
-5. **Direct Execution Bypass Attempt:** Calling execution endpoints directly returns HTTP 403 Forbidden and records a `rejected` event in the audit log.
-6. **Tamper-Evident Audit Chain:** SHA-256 hash chain verification proves that no audit records have been altered, reordered, or deleted.
+1. A valid invoice waits for 2 approvals, then runs as a simulated payment.
+2. The same request in Vietnamese is parsed the same way.
+3. Unknown payees and spending over the rolling 24h limit are blocked.
+4. A prompt injection produces a disallowed action and is thrown away.
+5. Calling the execute endpoint directly returns 403 and is logged.
+6. The audit log is a SHA-256 hash chain; any edit breaks it.
 
 ---
 
@@ -41,7 +40,7 @@ Our prototype demonstrates an interactive Governance & Quorum Console:
 
 ---
 
-## Setup & Running the Prototype
+## Setup
 
 ### Prerequisites
 - Node.js 18+ and npm.
@@ -73,7 +72,7 @@ By default, the system runs with an offline mock keyword parser (`agent: "mock"`
 - **OpenAI-Compatible (Gemini, Groq, Ollama)**:
   - `LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai`
   - `LLM_API_KEY=your_gemini_api_key`
-  - `LLM_MODEL=gemini-2.0-flash` (or Groq / local Ollama model)
+  - `LLM_MODEL=gemini-3.8-flash` and `LLM_FALLBACK_MODELS=gemini-3.5-flash,gemini-2.5-flash` (use model ids your key lists; `backend/check-llm.sh` tests them)
 
 ### 5. Run Backend & Frontend
 
