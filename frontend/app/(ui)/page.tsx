@@ -21,20 +21,22 @@ const EXAMPLES = [
 ];
 
 export default function NewRequestPage() {
-  const { canAct, hasRole, isMock, devBypass, authenticated } = useRoleContext();
+  const { canAct, hasRole, isMock, devBypass, authenticated, currentUser } = useRoleContext();
   const { status } = useApiStatus();
 
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [latest, setLatest] = useState<Request | null>(null);
+  // Only this user's own requests are shown here; everyone's requests are on the Approvals page.
+  const [mine, setMine] = useState<Request[]>([]);
+  const latest = mine[0] ?? null;
 
   useEffect(() => {
     if (!canAct) return;
     fetchRequests()
-      .then((list) => setLatest(list[0] ?? null))
+      .then((list) => setMine(list.filter((r) => r.requester === currentUser)))
       .catch(() => {});
-  }, [canAct, authenticated]);
+  }, [canAct, authenticated, currentUser]);
 
   const allowed = canAct && (isMock || devBypass || hasRole('requester'));
 
@@ -44,7 +46,8 @@ export default function NewRequestPage() {
     setSending(true);
     setError(null);
     try {
-      setLatest(await submitRequest(text.trim()));
+      const created = await submitRequest(text.trim());
+      setMine((prev) => [created, ...prev.filter((r) => r.id !== created.id)]);
       setText('');
     } catch (err: any) {
       setError(err?.message || 'The request could not be sent.');
@@ -88,7 +91,7 @@ export default function NewRequestPage() {
           </div>
 
           <div>
-            <div className={styles.label}>Try an example</div>
+            <div className={styles.label}>Or fill the box with an example</div>
             <div className={styles.examples}>
               {EXAMPLES.map((ex) => (
                 <button key={ex.label} type="button" className={styles.example} onClick={() => setText(ex.text)}>
@@ -137,20 +140,27 @@ export default function NewRequestPage() {
         </aside>
       </div>
 
-      <h2 className={styles.sectionTitle}>Latest request</h2>
-      {latest ? (
+      <h2 className={styles.sectionTitle}>Your requests</h2>
+      {mine.length > 0 ? (
+        <div className={styles.stack}>
+        {mine.slice(0, 5).map((r) => (
         <RequestSlip
-          req={latest}
+          key={r.id}
+          req={r}
           actions={
-            latest.status === 'pending' ? (
+            r.status === 'pending' ? (
               <Link href="/queue" className={`${styles.btn} ${styles.btnGhost} ${styles.btnSmall}`}>
                 Open approvals
               </Link>
             ) : undefined
           }
         />
+        ))}
+        </div>
       ) : (
-        <div className={styles.empty}>No requests yet. Pick an example above and send it to the agent.</div>
+        <div className={styles.empty}>
+          {canAct ? 'You have not sent any requests yet. Type what should be paid, or pick an example to fill the box.' : 'Sign in to see your requests.'}
+        </div>
       )}
     </>
   );
