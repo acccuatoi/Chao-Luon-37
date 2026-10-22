@@ -15,7 +15,14 @@ const fail = (status: number, error: string) => ({ error: NextResponse.json({ er
 /** Verifies the Bearer token with TideCloak and requires `role` ("requester", "approver" or "offline_access"). */
 export async function authenticate(req: NextRequest, role: string): Promise<AuthResult> {
   if (devBypass()) {
-    const user = req.headers.get("x-dev-user");
+    // Header values must be ISO-8859-1, so clients may send the name URI-encoded (e.g. Vietnamese names).
+    const rawUser = req.headers.get("x-dev-user");
+    let user = rawUser;
+    try {
+      user = rawUser ? decodeURIComponent(rawUser) : rawUser;
+    } catch {
+      /* keep raw value */
+    }
     const roles = (req.headers.get("x-dev-role") ?? "").split(",").map((s) => s.trim());
     if (!user) return fail(401, "Unauthorized: missing x-dev-user (dev bypass)");
     if (role !== "offline_access" && !roles.includes(role)) return fail(403, `Forbidden: role "${role}" required`);
