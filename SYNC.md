@@ -55,10 +55,10 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
 
 | # | From | To | Request | Status | Note |
 |---|---|---|---|---|---|
-| 1 | CORE | FRONTEND | Build 3 screens (submit `/`, approval queue `/queue`, audit log `/audit`) + header with user/role and a status badge from `/api/status`. Use mock data behind `NEXT_PUBLIC_USE_MOCK=true` with a visible "MOCK DATA" banner. Full brief was sent as a prompt; summary in Frontend section. | acknowledged 11:15 | Foundation is on `main`; pull and start branch `frontend` |
+| 1 | CORE | FRONTEND | Build 3 screens (submit `/`, approval queue `/queue`, audit log `/audit`) + header with user/role and a status badge from `/api/status`. Use mock data behind `NEXT_PUBLIC_USE_MOCK=true` with a visible "MOCK DATA" banner. Full brief was sent as a prompt; summary in Frontend section. | done 11:55 | Built in `app/(ui)/**`, `components/**`, `lib/ui/**` on branch `frontend`. TypeScript 0 errors, browser verified. |
 | 2 | CORE | BACKEND | Implement the 5 endpoints above with in-memory storage first. Enforce: no self-approval, no double approval, no execution without enough approvals, direct calls to execute are rejected. | open | |
 | 3 | CORE | ALL | Confirm the use case (payments with whitelist and daily cap) and the judging criteria. | open | Criteria still UNKNOWN to CORE |
-| 4 | FRONTEND | CORE | (add rows here) | | |
+| 4 | FRONTEND | BACKEND | Please let FRONTEND know when live endpoints (/api/requests, /api/audit, /api/status) are ready so we can toggle NEXT_PUBLIC_USE_MOCK=false to test live integration. | open | |
 
 ## Status by side (update after each finished item)
 
@@ -69,10 +69,11 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
 - Needs from others: frontend and backend please read Requests #1 and #2.
 - Next: wire quorum (try Tide scenario `policy-governed-signing`; fallback: role-based approval + E2EE).
 
-### FRONTEND (updated 11:15, from Machine 2 / Antigravity)
-- Done: brief reviewed and acknowledged. A static prototype exists in `ui/` (HTML/CSS/JS), plus drafts in `docs/` and `submission/`.
-- Doing: waiting for CORE's foundation push, then `git checkout -b frontend` and build the 3 screens in `app/(ui)/**` with a mock client.
-- Needs from others: CORE push of the Next.js foundation (done at 11:35, see Handoff log).
+### FRONTEND (updated 11:55, from Machine 2 / Antigravity)
+- Done: Branch `frontend` active. Built all 3 screens in Next.js App Router (`/`, `/queue`, `/audit`) + `Header`, `VisualFlow`, `ProposalCard`, `RoleContext`, `lib/ui/mock.ts`, `lib/ui/api.ts`.
+- Verified: Zero TypeScript errors (`tsc --noEmit`), dev server runs on localhost:3000, browser-tested end-to-end (submit proposal, approval quorum, audit log, role toggling).
+- Doing: Standing by to integrate live backend endpoints once Request #2 is ready.
+- Needs from others: BACKEND implementation of `/api/requests`, `/api/requests/:id/approve`, `/api/audit`, and `/api/status`.
 
 ### BACKEND (updated -)
 - Done:
@@ -111,3 +112,14 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
 - Honesty rule for UI and docs: show "Live TideCloak" only when `/api/status` returns `mode: "live"`. The figures in the `ui/` prototype and docs ("4 independent nodes", "30-second keys", "one-click revocation", "4-node quorum") are NOT verified. `tidecloak.json` shows `thresholdT: 14, thresholdN: 20`. Keep unverified claims out of UI copy and the public README until we test them (see Unknown / unverified).
 - The static `ui/` prototype and `docs/` + `submission/` drafts stay as reference. The submitted app is the Next.js one, so port the design into `app/(ui)/**` instead of shipping two UIs.
 - Open question for you: the prototype's `/api/agent/execute` and `/api/vault/*` endpoints differ from our contract (`/api/requests`, `/api/audit`, `/api/status`). Please follow the contract in this file.
+
+### 11:55 FRONTEND to CORE & BACKEND (Machine 2, Antigravity)
+- Request #1 is complete on branch `frontend`.
+- Built 3 screens + navigation and components in `app/(ui)/**`, `components/**`, `lib/ui/**`:
+  - `/`: Natural language prompt input, quick chips (including Vietnamese UTF-8), VisualFlow governance progression, ProposalCard with risk tags and policy breakdown.
+  - `/queue`: Requests list, quorum progression (e.g. 1/2), Approver signature history, Role-gated "Approve Request" button (disables for requesters, non-approvers, or duplicate signatures), 5s auto-polling + manual refresh.
+  - `/audit`: Cryptographic chronological audit trail with event filtering (proposed, approved, executed, blocked, rejected) and request ID search.
+  - Header: Displays "SentinelAgent", honest "Simulated" / "Live TideCloak" badge from `/api/status`, "MOCK DATA" banner, and role switcher (`approver` / `requester`).
+- `lib/ui/api.ts` queries backend endpoints first and falls back gracefully to in-memory mock when offline. Flipping `NEXT_PUBLIC_USE_MOCK=false` will hit real endpoints with 0 code changes.
+- Branch `frontend` is pushed to remote origin. Waiting for BACKEND to complete Request #2 so we can test end-to-end against live APIs.
+
