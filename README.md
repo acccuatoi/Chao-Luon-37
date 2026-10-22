@@ -22,7 +22,7 @@ TideCloak decides who may ask and who may approve (`requester`, `approver` roles
 
 ### 5. Prototype & storytelling
 1. A valid invoice waits for approval, then runs as a simulated payment.
-2. A second in-policy payment (office rent) shows the same flow.
+2. Pay by bank account or QR code: only approved accounts pass; a QR naming AWS with a look-alike account is blocked.
 3. Unknown payees and spending over the rolling 24h limit are blocked.
 4. A prompt injection produces a disallowed action and is thrown away.
 5. Calling the execute endpoint directly returns 403 and is logged.
@@ -31,12 +31,8 @@ TideCloak decides who may ask and who may approve (`requester`, `approver` roles
 ---
 
 ## Demo Video
-- 2-minute demo video location: [`submission/demo_video/`](submission/demo_video/)
-- Video outline:
-  1. **The possibility**: Autonomous AI Agents executing critical tasks safely.
-  2. **The constraint**: The risk of prompt injection, leaked API keys, and rogue tool calls.
-  3. **The prototype**: Demonstrating live TideCloak authentication, quorum gatekeeping, and instant refusal.
-  4. **What changes**: Organizations can delegate autonomy without surrendering unilateral control.
+- Video: [`submission/demo_video/demo.mp4`](submission/demo_video/demo.mp4) (about 2 minutes); script in [`submission/demo_video/video_script.md`](submission/demo_video/video_script.md)
+- Outline: the risk of giving an AI agent payment power, then the prototype (sign-in with TideCloak, agent proposal, policy blocks, QR look-alike, approval, refused direct execution, audit chain), then what changes.
 
 ---
 
