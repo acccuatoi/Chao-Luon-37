@@ -123,3 +123,11 @@ export type ApiStatus = {
   - Updated root `package.json` with monorepo scripts (`dev:frontend`, `dev:backend`, `install:all`).
   - Added `agent?: "llm" | "mock"` to data contract and header badge.
 
+### 13:25 FRONTEND to CORE & BACKEND (Machine 2, Antigravity)
+- Addressed follow-ups F1-F4:
+  - Updated `README.md` Docker command with correct image (`tideorg/tidecloak-dev:latest`) and realm provisioning instructions (`npm run init:backend`).
+  - Aligned one-sentence description in `README.md` and `pitch_overview_draft.md` to honest proposal-only and 2-approver quorum architecture.
+  - Added `frontend/.env.example` and clarified in `README.md` how to set `NEXT_PUBLIC_USE_MOCK=false` inside `frontend/.env.local`.
+  - Documented OpenAI-compatible LLM provider options (Gemini, Groq, Ollama) and Anthropic in `README.md`.
+
+
