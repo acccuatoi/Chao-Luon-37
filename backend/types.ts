@@ -35,5 +35,7 @@ export type AuditEntry = {
 
 export type ApiStatus = {
   mode: "live" | "simulated";
+  // "llm" = real model proposes actions; "mock" = offline keyword parser (no AI). Added 12:40.
+  agent?: "llm" | "mock";
   policy: { dailyCapUsd: number; whitelist: string[] };
 };
