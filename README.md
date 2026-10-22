@@ -72,7 +72,7 @@ By default, the system runs with an offline mock keyword parser (`agent: "mock"`
 - **OpenAI-Compatible (Gemini, Groq, Ollama)**:
   - `LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai`
   - `LLM_API_KEY=your_gemini_api_key`
-  - `LLM_MODEL=gemini-3.8-flash` and `LLM_FALLBACK_MODELS=gemini-3.5-flash,gemini-2.5-flash` (use model ids your key lists; `backend/check-llm.sh` tests them)
+  - `LLM_MODEL=gemini-3.8-flash` and `LLM_FALLBACK_MODELS=gemini-3.5-flash,gemini-flash-latest` (use model ids your key lists; `backend/check-llm.sh` tests them)
 
 ### 5. Run Backend & Frontend
 
