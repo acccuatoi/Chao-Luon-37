@@ -122,7 +122,7 @@ export function createRequest(
       ? `Blocked: the agent's reply could not be used (${rejectedReason.replace(/^agent error: /, "")}). Nothing was sent to approvers; try again.`
       : `Blocked: AI output rejected by schema check (${rejectedReason ?? "invalid output"}).`;
   } else {
-    const v = evaluatePolicy(proposal, spentLast24h(requester.id));
+    const v = evaluatePolicy(proposal, spentLast24h(requester.id), text);
     if (v.ok) requiredApprovals = v.requiredApprovals;
     else {
       status = "blocked";
