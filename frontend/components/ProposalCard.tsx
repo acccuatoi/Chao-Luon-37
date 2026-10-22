@@ -17,15 +17,46 @@ export default function ProposalCard({
   blockedReason,
   approvalsCount = 0
 }: ProposalCardProps) {
+  const isBlocked = status === 'blocked';
+
+  // Requirement B6 & B13: When proposal is null and blocked, show security defense win
   if (!proposal) {
+    if (isBlocked) {
+      return (
+        <div
+          className={`${styles.proposalCard} ${styles.proposalCardBlocked}`}
+          style={{ borderLeft: '4px solid #ef4444' }}
+        >
+          <div className={styles.proposalHeader}>
+            <div className={styles.proposalTitle} style={{ color: '#f87171' }}>
+              🛡️ Security Gate: AI Output Quarantined & Blocked
+            </div>
+            <span className={styles.riskHigh}>BLOCKED</span>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: '0.86rem', color: '#fca5a5', marginBottom: 8, lineHeight: 1.5 }}>
+              <strong>Policy Defense Win:</strong> The AI agent prompt or output failed schema verification and was rejected before reaching human approvers.
+            </div>
+
+            <div className={styles.blockedAlert} role="alert" style={{ marginTop: 8 }}>
+              <strong>⛔ Reason:</strong> {blockedReason || 'AI output rejected by schema check: unauthorized action, prompt injection, or malformed parameters.'}
+            </div>
+          </div>
+
+          <div className={styles.plainLanguageNotice} style={{ borderColor: '#7f1d1d', background: 'rgba(127, 29, 29, 0.2)' }}>
+            🔒 <strong>Defense in Depth:</strong> Because the AI is strictly isolated as a proposer without execution keys, malicious instructions cannot compromise the system.
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={styles.emptyBox}>
         No AI proposal generated for this request.
       </div>
     );
   }
-
-  const isBlocked = status === 'blocked';
 
   return (
     <div
@@ -75,8 +106,8 @@ export default function ProposalCard({
           <strong>⛔ Blocked by Policy:</strong> {blockedReason || 'Policy check failed.'}
         </div>
       ) : status === 'executed' ? (
-        <div className={styles.plainLanguageNotice} style={{ color: '#34d399', borderColor: '#059669' }}>
-          ✓ Action successfully executed via TideCloak Quorum.
+        <div className={styles.plainLanguageNotice} style={{ color: '#34d399', borderColor: '#059669', background: 'rgba(5, 150, 105, 0.15)' }}>
+          ✓ Executed after {requiredApprovals}/{requiredApprovals} approvals (simulated payment).
         </div>
       ) : (
         <div className={styles.plainLanguageNotice}>

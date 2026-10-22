@@ -23,7 +23,7 @@ export default function VisualFlow({
 
   return (
     <div className={styles.flowContainer}>
-      <div className={styles.flowTitle}>Governance & Execution Flow (TideCloak Quorum)</div>
+      <div className={styles.flowTitle}>Governance & Multi-Party Quorum Flow</div>
       <div className={styles.flowSteps}>
         {/* Step 1 */}
         <div
@@ -103,7 +103,7 @@ export default function VisualFlow({
             {isBlocked
               ? 'Blocked / Quarantined'
               : status === 'executed'
-              ? 'Executed via TideCloak'
+              ? 'Executed (Simulated Payment)'
               : 'Awaiting Quorum'}
           </div>
         </div>

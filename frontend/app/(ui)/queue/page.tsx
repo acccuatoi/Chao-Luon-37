@@ -2,20 +2,31 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Request } from '../../../lib/types';
-import { fetchRequests, approveRequest } from '../../../lib/ui/api';
+import { fetchRequests, approveRequest, executeDirectly, resetDemoData } from '../../../lib/ui/api';
 import { useRoleContext } from '../../../components/RoleContext';
 import styles from '../../../components/styles.module.css';
 
 export default function ApprovalQueuePage() {
-  const { currentRole, currentUser } = useRoleContext();
-  const userRole = currentRole;
-  const userName = currentUser;
+  const {
+    authenticated,
+    currentUser,
+    userRoles,
+    hasRole,
+    login,
+    isMock
+  } = useRoleContext();
+
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [bypassNotice, setBypassNotice] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [executingId, setExecutingId] = useState<string | null>(null);
+
+  const isLive = !isMock;
+  const isApprover = hasRole('approver');
 
   const loadQueue = useCallback(async (isSilent = false) => {
     if (!isSilent) setRefreshing(true);
@@ -42,18 +53,37 @@ export default function ApprovalQueuePage() {
     return () => clearInterval(interval);
   }, [loadQueue]);
 
+  // Handle Quorum Approval (Requirements B5, B14)
   const handleApprove = async (req: Request) => {
     setApprovingId(req.id);
     setActionError(null);
+    setBypassNotice(null);
 
     try {
-      const updated = await approveRequest(req.id, userName);
-      // Update local item
+      const updated = await approveRequest(req.id, currentUser);
       setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
     } catch (err: any) {
-      setActionError(err.message || `Failed to approve request ${req.id}`);
+      // Show exact backend error (400 self-approval/duplicate, 403 role, 401 unauth, 404 not found)
+      setActionError(err.message || `Approval failed for request ${req.id}`);
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  // Requirement B15: Demo button "Try to execute directly" on pending request
+  const handleTryDirectExecute = async (reqId: string) => {
+    setExecutingId(reqId);
+    setActionError(null);
+    setBypassNotice(null);
+
+    try {
+      await executeDirectly(reqId);
+      setBypassNotice(`Unexpected: Direct execution succeeded for ${reqId}`);
+    } catch (err: any) {
+      // 403 error proves nobody can bypass quorum!
+      setBypassNotice(`⛔ Quorum Bypass Prevented (HTTP 403): "${err.message}" — Written to audit log as 'rejected'.`);
+    } finally {
+      setExecutingId(null);
     }
   };
 
@@ -64,7 +94,7 @@ export default function ApprovalQueuePage() {
       case 'approved':
         return <span className={styles.chipApproved}>Quorum In-Progress</span>;
       case 'executed':
-        return <span className={styles.chipExecuted}>Executed</span>;
+        return <span className={styles.chipExecuted}>Executed (Simulated)</span>;
       case 'blocked':
         return <span className={styles.chipBlocked}>Blocked by Policy</span>;
       default:
@@ -72,7 +102,15 @@ export default function ApprovalQueuePage() {
     }
   };
 
-  const isUserApprover = userRole === "approver";
+  const handleResetDemo = async () => {
+    if (!window.confirm("Reset all requests and audit log to initial state?")) return;
+    try {
+      await resetDemoData();
+      await loadQueue();
+    } catch (err: any) {
+      setActionError(err.message || "Failed to reset demo data (backend DEMO_RESET_ENABLED may be false)");
+    }
+  };
 
   return (
     <div>
@@ -80,29 +118,71 @@ export default function ApprovalQueuePage() {
         <div>
           <h1 className={styles.pageTitle}>Governance Approval Queue</h1>
           <p className={styles.pageDesc}>
-            Review AI-proposed actions requiring multi-human quorum verification under TideCloak policy.
+            Review AI-proposed actions requiring multi-human quorum verification. Self-approval and duplicate signatures are rejected.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => loadQueue()}
-          disabled={refreshing}
-          className={styles.btnAuth}
-          style={{ background: '#1e293b', border: '1px solid #475569', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          {refreshing ? 'Refreshing...' : 'Refresh Queue (5s auto)'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {isApprover && (
+            <button
+              type="button"
+              onClick={handleResetDemo}
+              className={styles.btnAuthOut}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+              title="Reset demo data for rehearsals (calls POST /api/admin/reset)"
+            >
+              🔄 Reset Demo Data
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => loadQueue()}
+            disabled={refreshing}
+            className={styles.btnAuth}
+            style={{ background: '#1e293b', border: '1px solid #475569', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            {refreshing ? 'Refreshing...' : 'Refresh Queue (5s auto)'}
+          </button>
+        </div>
       </div>
 
+      {/* Login Gate in Live Mode (Requirement B11) */}
+      {isLive && !authenticated && (
+        <div className={styles.errorBox} style={{ background: 'rgba(234, 179, 8, 0.1)', borderColor: 'rgba(234, 179, 8, 0.4)', color: '#fef08a', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <strong>🔐 Authentication Required:</strong>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.84rem', color: '#fde047' }}>
+              You are running in live mode. Please log in with TideCloak to approve quorum requests.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={login}
+            className={styles.btnPrimary}
+            style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+          >
+            Log In with TideCloak
+          </button>
+        </div>
+      )}
+
+      {/* Action / Backend Error Banner (Requirement B5) */}
       {actionError && (
         <div className={styles.errorBox} style={{ marginBottom: 16 }}>
-          <strong>Action Warning:</strong> {actionError}
+          <strong>⛔ Backend Action Error:</strong> {actionError}
+        </div>
+      )}
+
+      {/* Direct Execution Attempt Notice (Requirement B15) */}
+      {bypassNotice && (
+        <div className={styles.plainLanguageNotice} style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: '#ef4444', color: '#fca5a5', marginBottom: 16 }}>
+          <strong>Security Demonstration:</strong> {bypassNotice}
         </div>
       )}
 
@@ -119,22 +199,27 @@ export default function ApprovalQueuePage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {requests.map((req) => {
-            const isRequester = req.requester === userName;
-            const alreadyApproved = req.approvals?.some(a => a.approver === userName);
+            const isRequester = req.requester === currentUser;
+            const alreadyApproved = req.approvals?.some(a => a.approver === currentUser);
             const isBlocked = req.status === 'blocked';
             const isExecuted = req.status === 'executed';
-            const canApprove = isUserApprover && !isRequester && !alreadyApproved && !isBlocked && !isExecuted;
+            const isPending = req.status === 'pending';
+
+            // Check if current user can approve (Requirement B14)
+            const canApprove = (!isLive || authenticated) && isApprover && isPending && !isRequester && !alreadyApproved;
 
             let disabledReason = '';
-            if (isRequester) disabledReason = "You cannot approve your own request";
-            else if (alreadyApproved) disabledReason = "You have already approved this request";
-            else if (!isUserApprover) disabledReason = "Only users with role 'approver' can sign";
+            if (isLive && !authenticated) disabledReason = "Log in required to sign";
+            else if (!isPending) disabledReason = `Cannot approve ${req.status} request`;
+            else if (isRequester) disabledReason = "Self-approval prohibited (requester cannot sign)";
+            else if (alreadyApproved) disabledReason = "Duplicate signature prohibited (already approved)";
+            else if (!isApprover) disabledReason = "Requires role 'approver'";
 
             return (
               <div key={req.id} className={styles.card} style={{ marginBottom: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8' }}>{req.id}</span>
                       {getStatusChip(req.status)}
                       <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
@@ -156,8 +241,8 @@ export default function ApprovalQueuePage() {
                   </div>
                 </div>
 
-                {/* Proposal summary */}
-                {req.proposal && (
+                {/* Proposal summary or Quarantined banner (Requirement B6) */}
+                {req.proposal ? (
                   <div style={{ background: '#020617', padding: '10px 14px', borderRadius: 6, border: '1px solid #1e293b', marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 6 }}>
                       <span>
@@ -176,7 +261,11 @@ export default function ApprovalQueuePage() {
                       ))}
                     </div>
                   </div>
-                )}
+                ) : isBlocked ? (
+                  <div style={{ background: 'rgba(127, 29, 29, 0.2)', border: '1px solid #7f1d1d', padding: '8px 12px', borderRadius: 6, marginBottom: 12, fontSize: '0.82rem', color: '#fca5a5' }}>
+                    🛡️ <strong>AI Output Quarantined:</strong> Raw prompt was rejected by schema verification.
+                  </div>
+                ) : null}
 
                 {/* Blocked reason */}
                 {isBlocked && (
@@ -200,34 +289,52 @@ export default function ApprovalQueuePage() {
                 )}
 
                 {/* Action footer */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1e293b', paddingTop: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #1e293b', paddingTop: 10, flexWrap: 'wrap', gap: 10 }}>
                   <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
-                    {isExecuted ? 'Execution verified by TideCloak Quorum.' : isBlocked ? 'Execution halted.' : `Requires ${req.requiredApprovals - (req.approvals?.length || 0)} more independent signature(s).`}
+                    {isExecuted
+                      ? `Executed after ${req.requiredApprovals}/${req.requiredApprovals} approvals (simulated payment).`
+                      : isBlocked
+                      ? 'Execution halted by Policy Guard.'
+                      : `Requires ${req.requiredApprovals - (req.approvals?.length || 0)} more independent signature(s).`}
                   </span>
 
-                  {/* Show Approve Button only for role approver or show disabled reason */}
-                  {!isExecuted && !isBlocked && (
-                    <div>
-                      {isUserApprover ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {/* Requirement B15: Demo button "Try to execute directly" on pending request */}
+                    {isPending && (
+                      <button
+                        type="button"
+                        onClick={() => handleTryDirectExecute(req.id)}
+                        disabled={executingId === req.id}
+                        className={styles.btnAuthOut}
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', border: '1px solid #fb7185', color: '#fb7185' }}
+                        title="Demonstrates that direct execution without quorum is blocked with 403"
+                      >
+                        {executingId === req.id ? 'Sending direct call...' : '⚡ Try direct execution (Demo)'}
+                      </button>
+                    )}
+
+                    {/* Approve Button (Requirements B5, B14) */}
+                    {isPending && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <button
                           type="button"
                           className={styles.btnPrimary}
                           disabled={!canApprove || approvingId === req.id}
                           onClick={() => handleApprove(req)}
-                          title={disabledReason || "Approve this request as authorized approver"}
+                          title={disabledReason || "Approve this request with your quorum signature"}
                           style={{ padding: '6px 14px', fontSize: '0.82rem' }}
                         >
                           {approvingId === req.id ? 'Submitting Quorum Signature...' : 'Approve Request'}
                         </button>
-                      ) : null}
 
-                      {disabledReason && (
-                        <span style={{ fontSize: '0.74rem', color: '#fb7185', marginLeft: 8, fontStyle: 'italic' }}>
-                          ({disabledReason})
-                        </span>
-                      )}
-                    </div>
-                  )}
+                        {disabledReason && (
+                          <span style={{ fontSize: '0.74rem', color: '#fb7185', fontStyle: 'italic' }}>
+                            ({disabledReason})
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );

@@ -20,6 +20,7 @@ export type Request = {
   requiredApprovals: number;
   blockedReason?: string;
   createdAt: string;
+  encryptedMemo?: string;
 };
 
 export type AuditEvent = "proposed" | "approved" | "executed" | "blocked" | "rejected";
@@ -31,9 +32,12 @@ export type AuditEntry = {
   event: AuditEvent;
   requestId: string;
   detail: string;
+  prevHash?: string;
+  hash?: string;
 };
 
 export type ApiStatus = {
   mode: "live" | "simulated";
+  agent?: "llm" | "mock";
   policy: { dailyCapUsd: number; whitelist: string[] };
 };

@@ -30,7 +30,7 @@ export default function RedirectPage() {
 
   useEffect(() => {
     if (!isInitializing) {
-      router.push(authenticated ? '/home' : '/')
+      router.push('/')
     }
   }, [authenticated, isInitializing, router])
 
