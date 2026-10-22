@@ -85,6 +85,33 @@ export default function SubmitRequestPage() {
         requiredApprovals={latestRequest?.requiredApprovals || 2}
       />
 
+      {/* Anime Mascot: Sentinel Eel 37 */}
+      <div className={styles.mascotHeroCard}>
+        <img
+          src="/mascot.jpg"
+          alt="Sentinel Eel 37 (Cháo Lươn 37)"
+          className={styles.mascotHeroAvatar}
+        />
+        <div className={styles.mascotContent}>
+          <div className={styles.mascotTitleRow}>
+            <div className={styles.mascotName}>
+              <span>Lươn Vệ Binh 37 (Sentinel Eel)</span>
+              <span style={{ fontSize: '0.9rem' }}>⚡</span>
+            </div>
+            <span className={styles.mascotTag}>AI Proposer Only</span>
+          </div>
+          <p className={styles.mascotSpeech}>
+            &ldquo;Chào bạn! Tôi là mascot <strong>Lươn Vệ Binh (Cháo Lươn 37)</strong>. Tôi có thể đọc hiểu ngôn ngữ tự nhiên để soạn thảo đề xuất giao dịch, nhưng <strong>tuyệt đối không nắm giữ khóa ký</strong>. Mọi giao dịch muốn thực thi bắt buộc phải được hội đồng Quorum đa nhân sự phê duyệt qua TideCloak!&rdquo;
+          </p>
+          <div className={styles.mascotBadges}>
+            <span className={styles.mascotMiniBadge}>🛡️ Multi-Party Quorum</span>
+            <span className={styles.mascotMiniBadge}>🔒 Non-Custodial Keys</span>
+            <span className={styles.mascotMiniBadge}>⚡ Prompt-Injection Resilient</span>
+            <span className={styles.mascotMiniBadge}>🍜 Nghệ An #37 Cyber Division</span>
+          </div>
+        </div>
+      </div>
+
       {/* Request Submission Box */}
       <div className={styles.card}>
         <form onSubmit={handleSubmit}>

@@ -53,7 +53,14 @@ export default function VisualFlow({
           }`}
         >
           <div className={styles.stepNum}>STEP 2</div>
-          <div className={styles.stepName}>2. AI Proposal</div>
+          <div className={styles.stepName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <img
+              src="/mascot.jpg"
+              alt="Eel mascot"
+              style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover', border: '1px solid #38bdf8' }}
+            />
+            <span>2. AI Proposal</span>
+          </div>
           <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: 2 }}>
             Propose action only (No key)
           </div>

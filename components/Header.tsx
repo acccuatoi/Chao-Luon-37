@@ -56,11 +56,13 @@ export default function Header({ currentRole = "approver", onRoleChange, current
         <div className={styles.headerInner}>
           <div className={styles.brandGroup}>
             <Link href="/" className={styles.brandTitle}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
+              <img
+                src="/mascot.jpg"
+                alt="Cháo Lươn 37 Mascot"
+                className={styles.mascotHeaderLogo}
+              />
               <span>SentinelAgent</span>
-              <span className={styles.brandSub}>TideCloak Quorum</span>
+              <span className={styles.brandSub}>Cháo Lươn 37</span>
             </Link>
 
             <nav className={styles.navLinks} aria-label="Main Navigation">

@@ -58,7 +58,8 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
 | 1 | CORE | FRONTEND | Build 3 screens (submit `/`, approval queue `/queue`, audit log `/audit`) + header with user/role and a status badge from `/api/status`. Use mock data behind `NEXT_PUBLIC_USE_MOCK=true` with a visible "MOCK DATA" banner. Full brief was sent as a prompt; summary in Frontend section. | done 11:55 | Built in `app/(ui)/**`, `components/**`, `lib/ui/**` on branch `frontend`. TypeScript 0 errors, browser verified. |
 | 2 | CORE | BACKEND | Implement the 5 endpoints above with in-memory storage first. Enforce: no self-approval, no double approval, no execution without enough approvals, direct calls to execute are rejected. | open | |
 | 3 | CORE | ALL | Confirm the use case (payments with whitelist and daily cap) and the judging criteria. | open | Criteria still UNKNOWN to CORE |
-| 4 | FRONTEND | BACKEND | Please let FRONTEND know when live endpoints (/api/requests, /api/audit, /api/status) are ready so we can toggle NEXT_PUBLIC_USE_MOCK=false to test live integration. | open | |
+| 4 | FRONTEND | BACKEND | Technical specifications for backend endpoints: (1) POST /api/requests: support UTF-8 Vietnamese text, evaluate policy ($5,000 daily cap, whitelist), create audit entry; (2) POST /api/requests/:id/approve: enforce no self-approval, no double approval, trigger execution once quorum threshold (e.g. 2 approvals) reached; (3) GET /api/status: return { mode, policy } so UI renders dynamic caps/whitelist; (4) GET /api/audit: return immutable chronologically ordered log. | open | FRONTEND ready to test live with NEXT_PUBLIC_USE_MOCK=false |
+| 5 | FRONTEND | CORE/BACKEND | Unification of codebase: Frontend files are organized in `app/(ui)/**`, `components/**`, `lib/ui/**`, and `public/mascot.jpg`. Backend/Core owns `app/api/**`, `lib/agent/**`, `lib/tide/**`, `init/**`, `proxy.ts`, `tidecloak.json`. Merged to `main` and `frontend` branches. | done 12:05 | Both branches unified and pushed to GitHub |
 
 ## Status by side (update after each finished item)
 
@@ -69,11 +70,14 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
 - Needs from others: frontend and backend please read Requests #1 and #2.
 - Next: wire quorum (try Tide scenario `policy-governed-signing`; fallback: role-based approval + E2EE).
 
-### FRONTEND (updated 11:55, from Machine 2 / Antigravity)
-- Done: Branch `frontend` active. Built all 3 screens in Next.js App Router (`/`, `/queue`, `/audit`) + `Header`, `VisualFlow`, `ProposalCard`, `RoleContext`, `lib/ui/mock.ts`, `lib/ui/api.ts`.
-- Verified: Zero TypeScript errors (`tsc --noEmit`), dev server runs on localhost:3000, browser-tested end-to-end (submit proposal, approval quorum, audit log, role toggling).
-- Doing: Standing by to integrate live backend endpoints once Request #2 is ready.
-- Needs from others: BACKEND implementation of `/api/requests`, `/api/requests/:id/approve`, `/api/audit`, and `/api/status`.
+### FRONTEND (updated 12:05, from Machine 2 / Antigravity)
+- Done:
+  - Branch `frontend` active & merged to `main`.
+  - Built all 3 screens in Next.js App Router (`/`, `/queue`, `/audit`) + `Header`, `VisualFlow`, `ProposalCard`, `RoleContext`, `lib/ui/mock.ts`, `lib/ui/api.ts`.
+  - Added Anime Brown Eel mascot ("Lươn Vệ Binh 37 / Sentinel Eel") in Header, Hero Banner, and Visual Flow Step 2.
+- Verified: Zero TypeScript errors (`tsc --noEmit`), dev server runs on localhost:3000, browser-tested end-to-end.
+- Doing: Standing by to integrate live backend endpoints once Request #2 / Request #4 is ready.
+- Needs from others: BACKEND implementation of endpoints per Request #4.
 
 ### BACKEND (updated -)
 - Done:
@@ -122,4 +126,16 @@ Policy numbers (cap, whitelist) are placeholders; always read them from `/api/st
   - Header: Displays "SentinelAgent", honest "Simulated" / "Live TideCloak" badge from `/api/status`, "MOCK DATA" banner, and role switcher (`approver` / `requester`).
 - `lib/ui/api.ts` queries backend endpoints first and falls back gracefully to in-memory mock when offline. Flipping `NEXT_PUBLIC_USE_MOCK=false` will hit real endpoints with 0 code changes.
 - Branch `frontend` is pushed to remote origin. Waiting for BACKEND to complete Request #2 so we can test end-to-end against live APIs.
+
+### 12:05 FRONTEND to CORE & BACKEND (Machine 2, Antigravity)
+- Added anime brown eel mascot ("Lươn Vệ Binh 37 / Sentinel Eel") to UI:
+  - Header logo: circular avatar with glowing cyber-cyan rim next to brand title.
+  - Submit page: Hero Card with character dialogue explaining non-custodial AI proposer + TideCloak Quorum execution.
+  - Visual Flow Step 2: mini mascot avatar representing the AI Proposer.
+- Consolidated codebase:
+  - Frontend: `app/(ui)/**`, `components/**`, `lib/ui/**`, `public/mascot.jpg`.
+  - Backend/Core: `app/api/**`, `lib/agent/**`, `lib/tide/**`, `init/**`, `proxy.ts`, `tidecloak.json`.
+  - Both branches `frontend` and `main` unified and pushed to GitHub.
+- Open technical requests for BACKEND listed in Request #4 above.
+
 
