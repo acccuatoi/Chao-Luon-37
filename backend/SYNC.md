@@ -77,3 +77,4 @@ TideCloak (Docker, port 8080) must be running for real token checks.
 - 15:20 BACKEND: the rolling 24h cap is now per requester account (each person has their own $5,000 budget); blockedReason wording updated.
 - 15:25 BACKEND: visibility per account. GET /api/requests and GET /api/audit return everything only to approvers; other users get only their own requests and the audit entries about them.
 - 15:55 BACKEND: if every LLM model fails (503/timeout), the offline parser drafts the proposal and the proposal's note says so (LLM_FALLBACK_TO_MOCK=false to block instead). Per-model timeout 12 s.
+- 16:10 BACKEND: payee is re-read from the user's own words (lib/server/payee.ts). A known name followed by other words ("AWS Cloud Services Offshore Ltd") is a different, unapproved payee, even if the model shortened it. Found in testing.
