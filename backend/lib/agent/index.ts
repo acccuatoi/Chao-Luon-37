@@ -27,27 +27,43 @@ function extractJson(out: string): unknown {
   return JSON.parse(match[0]);
 }
 
+// Models to try in order: LLM_MODEL first, then LLM_FALLBACK_MODELS (comma list).
+// Free tiers often answer 429/503 when busy, so we move to the next model instead of failing the demo.
+function modelChain(): string[] {
+  const extra = (process.env.LLM_FALLBACK_MODELS ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+  return [process.env.LLM_MODEL!, ...extra];
+}
+
 async function callOpenAiCompat(text: string): Promise<unknown> {
   const base = process.env.LLM_BASE_URL!.replace(/\/+$/, "");
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (process.env.LLM_API_KEY) headers.authorization = `Bearer ${process.env.LLM_API_KEY}`;
-  const res = await fetch(`${base}/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model: process.env.LLM_MODEL,
-      temperature: 0,
-      max_tokens: 400,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `<user_request>${text}</user_request>` },
-      ],
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) throw new Error(`LLM HTTP ${res.status}`);
-  const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return extractJson(data.choices?.[0]?.message?.content ?? "");
+  let lastError = "no model configured";
+  for (const model of modelChain()) {
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        max_tokens: 400,
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: `<user_request>${text}</user_request>` },
+        ],
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (res.status === 429 || res.status === 503 || res.status === 404) {
+      lastError = `LLM HTTP ${res.status} on ${model}`;
+      console.warn(`${lastError}, trying next model`);
+      continue;
+    }
+    if (!res.ok) throw new Error(`LLM HTTP ${res.status} on ${model}`);
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    return extractJson(data.choices?.[0]?.message?.content ?? "");
+  }
+  throw new Error(lastError);
 }
 
 async function callLlm(text: string): Promise<unknown> {
