@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTideCloak } from '@tidecloak/nextjs';
 import { isMockMode, setAuthHeaderProvider } from '../lib/ui/api';
 
@@ -9,6 +9,8 @@ import { isMockMode, setAuthHeaderProvider } from '../lib/ui/api';
 // - Mock mode (NEXT_PUBLIC_USE_MOCK=true) or dev bypass (NEXT_PUBLIC_DEV_AUTH_BYPASS=true, backend DEV_AUTH_BYPASS=true):
 //   a test identity chosen in the header is used, and sent as x-dev-user / x-dev-role headers (dev bypass only).
 export const isDevBypass = (): boolean => process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
+
+const FRESH_LOGIN_KEY = 'sentinel.freshLogin';
 
 export type TestRole = 'requester' | 'approver' | 'both' | 'observer';
 
@@ -108,6 +110,24 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     setAuthHeaderProvider(getAuthHeaders);
   }, [getAuthHeaders]);
 
+  // Demo rule: a page reload always asks for sign-in again (easy account switching, no lingering sessions).
+  // Sign in sets a one-time flag; the page load that comes back from TideCloak consumes it. Any later reload
+  // finds no flag and ends the TideCloak session, so the next Sign in shows the login form.
+  const reloadChecked = useRef(false);
+  useEffect(() => {
+    if (useTestIdentity || isInitializing || reloadChecked.current) return;
+    reloadChecked.current = true;
+    if (!authenticated) return;
+    let fresh = false;
+    try {
+      fresh = sessionStorage.getItem(FRESH_LOGIN_KEY) === '1';
+      sessionStorage.removeItem(FRESH_LOGIN_KEY);
+    } catch {
+      fresh = false;
+    }
+    if (!fresh && typeof logout === 'function') logout();
+  }, [useTestIdentity, isInitializing, authenticated, logout]);
+
   const value: RoleContextType = {
     authenticated,
     isInitializing,
@@ -119,7 +139,14 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     hasRole,
     testRole,
     setTestRole,
-    login: () => (typeof login === 'function' ? login() : undefined),
+    login: () => {
+      try {
+        sessionStorage.setItem(FRESH_LOGIN_KEY, '1');
+      } catch {
+        /* storage blocked: the user will simply be asked to sign in again after the redirect */
+      }
+      return typeof login === 'function' ? login() : undefined;
+    },
     logout: () => (typeof logout === 'function' ? logout() : undefined),
   };
 
