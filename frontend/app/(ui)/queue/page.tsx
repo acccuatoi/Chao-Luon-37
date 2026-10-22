@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Request } from '../../../lib/types';
-import { fetchRequests, approveRequest, executeDirectly, resetDemoData } from '../../../lib/ui/api';
+import { fetchRequests, approveRequest, executeDirectly, resetDemoData, fetchStatus } from '../../../lib/ui/api';
 import { useRoleContext } from '../../../components/RoleContext';
 import styles from '../../../components/styles.module.css';
 
@@ -25,7 +25,13 @@ export default function ApprovalQueuePage() {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [executingId, setExecutingId] = useState<string | null>(null);
 
-  const isLive = !isMock;
+  const [apiMode, setApiMode] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchStatus().then((s) => setApiMode(s?.mode || null)).catch(() => {});
+  }, []);
+
+  const isDevBypass = apiMode === 'simulated';
   const isApprover = hasRole('approver');
 
   const loadQueue = useCallback(async (isSilent = false) => {
@@ -152,8 +158,8 @@ export default function ApprovalQueuePage() {
         </div>
       </div>
 
-      {/* Login Gate in Live Mode (Requirement B11) */}
-      {isLive && !authenticated && (
+      {/* Login Gate in Live Mode when DEV_AUTH_BYPASS is not active (Requirement B11) */}
+      {!isMock && !isDevBypass && !authenticated && (
         <div className={styles.errorBox} style={{ background: 'rgba(234, 179, 8, 0.1)', borderColor: 'rgba(234, 179, 8, 0.4)', color: '#fef08a', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <strong>🔐 Authentication Required:</strong>
@@ -205,11 +211,11 @@ export default function ApprovalQueuePage() {
             const isExecuted = req.status === 'executed';
             const isPending = req.status === 'pending';
 
-            // Check if current user can approve (Requirement B14)
-            const canApprove = (!isLive || authenticated) && isApprover && isPending && !isRequester && !alreadyApproved;
+            // Check if current user can approve (Requirement B14 & B9)
+            const canApprove = (isMock || isDevBypass || authenticated) && isApprover && isPending && !isRequester && !alreadyApproved;
 
             let disabledReason = '';
-            if (isLive && !authenticated) disabledReason = "Log in required to sign";
+            if (!isMock && !isDevBypass && !authenticated) disabledReason = "Log in required to sign";
             else if (!isPending) disabledReason = `Cannot approve ${req.status} request`;
             else if (isRequester) disabledReason = "Self-approval prohibited (requester cannot sign)";
             else if (alreadyApproved) disabledReason = "Duplicate signature prohibited (already approved)";

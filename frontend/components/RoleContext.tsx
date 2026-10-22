@@ -47,7 +47,7 @@ const RoleContext = createContext<RoleContextType>(defaultContext);
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [isMock, setIsMock] = useState<boolean>(true);
-  const [mockRole, setMockRole] = useState<string>('approver');
+  const [mockRole, setMockRole] = useState<string>('both');
   const [mockUser, setMockUser] = useState<string>('acccuatoi (Quản trị viên)');
 
   // Safely consume TideCloak hook
@@ -89,13 +89,12 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     }
   }, [mockRole]);
 
-  // Check role helper across realm and client roles (Requirement B12)
+  // Check role helper across realm and client roles (Requirement B12 & B9)
   const hasRole = useCallback((role: string): boolean => {
-    if (isMock) {
+    if (isMock || !authenticated) {
       if (mockRole === 'both') return role === 'requester' || role === 'approver';
       return mockRole === role;
     }
-    if (!authenticated) return false;
     const inRealm = typeof hasRealmRole === 'function' ? hasRealmRole(role) : false;
     const inClient = typeof hasClientRole === 'function' ? hasClientRole(role) : false;
     return Boolean(inRealm || inClient);
@@ -103,11 +102,10 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   // Compute all roles the user holds
   const userRoles = useMemo<string[]>(() => {
-    if (isMock) {
+    if (isMock || !authenticated) {
       if (mockRole === 'both') return ['requester', 'approver'];
       return [mockRole];
     }
-    if (!authenticated) return [];
     const roles: string[] = [];
     if (hasRole('requester')) roles.push('requester');
     if (hasRole('approver')) roles.push('approver');
@@ -117,8 +115,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   // Compute current display username
   const currentUser = useMemo<string>(() => {
-    if (isMock) return mockUser;
-    if (!authenticated) return 'Unauthenticated';
+    if (isMock || !authenticated) return mockUser;
 
     const preferred = (typeof getValueFromIdToken === 'function' && getValueFromIdToken('preferred_username')) ||
                       (typeof getValueFromToken === 'function' && getValueFromToken('preferred_username'));
@@ -151,7 +148,11 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
     // Always send x-dev headers when in mock mode or for dev bypass fallback
     if (isMock || !authenticated) {
-      headers['x-dev-user'] = currentUser;
+      // Ensure ASCII-safe ByteString for browser fetch headers (strip non-ASCII like 'Quản trị viên')
+      const asciiUser = currentUser.includes('acccuatoi')
+        ? 'acccuatoi'
+        : currentUser.replace(/[^\x00-\x7F]/g, '').trim() || 'alice.requester';
+      headers['x-dev-user'] = asciiUser;
       const rolesToSend = userRoles.filter(r => r === 'requester' || r === 'approver').join(',') || mockRole;
       headers['x-dev-role'] = rolesToSend;
     }

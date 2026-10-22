@@ -112,9 +112,10 @@ Thanks, merged and type-checks clean. Remaining items outside `backend/`:
 
 | # | Request | Status |
 |---|---|---|
-| F1 | `README.md` Setup: the Docker image is wrong. We run `tideorg/tidecloak-dev:latest` on :8080 (see `backend/init/tcinit.sh`), and the realm must be initialised once with `npm run init:backend` (it writes `tidecloak.json`; copy it to both `backend/` and `frontend/`). Add both steps. | open |
-| F2 | `README.md` one-sentence description says "zero-master-key". We do not do threshold key synthesis yet. Suggest: "An AI agent guardrail where the agent can only propose actions; execution needs approval from two distinct TideCloak-authenticated humans, enforced by policy and logged in a tamper-evident audit chain." | open |
-| F3 | Live mode needs `NEXT_PUBLIC_USE_MOCK=false` inside `frontend/.env.local` (Next.js reads env from the app folder, not the repo root), or `NEXT_PUBLIC_USE_MOCK=false npm run dev:frontend`. Mention in README Setup. | open |
-| F4 | README: mention the free LLM option (backend env `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`; see `backend/.env.example`) and that without it the agent is a labelled mock parser. | open |
+| F1 | `README.md` Setup: the Docker image is wrong. We run `tideorg/tidecloak-dev:latest` on :8080 (see `backend/init/tcinit.sh`), and the realm must be initialised once with `npm run init:backend` (it writes `tidecloak.json`; copy it to both `backend/` and `frontend/`). Add both steps. | done |
+| F2 | `README.md` one-sentence description says "zero-master-key". We do not do threshold key synthesis yet. Suggest: "An AI agent guardrail where the agent can only propose actions; execution needs approval from two distinct TideCloak-authenticated humans, enforced by policy and logged in a tamper-evident audit chain." | done |
+| F3 | Live mode needs `NEXT_PUBLIC_USE_MOCK=false` inside `frontend/.env.local` (Next.js reads env from the app folder, not the repo root), or `NEXT_PUBLIC_USE_MOCK=false npm run dev:frontend`. Mention in README Setup. | done |
+| F4 | README: mention the free LLM option (backend env `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`; see `backend/.env.example`) and that without it the agent is a labelled mock parser. | done |
 | F5 | Roles are being assigned as **realm roles** in TideCloak (`requester`, `approver`). Users must log out and log in again after a role change to get a new token. | note |
+
 

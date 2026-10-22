@@ -6,12 +6,12 @@
 ---
 
 ### Tóm tắt 1 câu (One-sentence description)
-> *SentinelAgent is a zero-master-key autonomous AI agent guardrail powered by TideCloak authentication and multi-party quorum governance that prevents prompt-injection jailbreaks and unauthorized execution.*
+> *SentinelAgent is an AI agent guardrail where the agent can only propose actions; execution needs approval from two distinct TideCloak-authenticated humans, enforced by policy and logged in a tamper-evident audit chain.*
 
 ---
 
 ### 1. Vision & originality (Tầm nhìn & Tính độc đáo)
-Autonomous AI agents are revolutionizing workflows, but granting them raw execution power or unilateral access creates catastrophic security risks. **SentinelAgent (Cháo Lươn 37)** enforces a zero-master-key paradigm: AI agents can only formulate proposals; execution requires multi-party human quorum approval authenticated via TideCloak.
+Autonomous AI agents are revolutionizing workflows, but granting them raw execution power or unilateral access creates catastrophic security risks. **SentinelAgent (Cháo Lươn 37)** enforces a strict separation of powers: AI agents can only formulate proposals; execution requires multi-party human quorum approval authenticated via TideCloak.
 
 ### 2. Trust constraint insight (Điểm nghẽn về niềm tin)
 Delegating high-stakes tasks to AI agents is blocked by fear of prompt injection, hallucinations, and rogue actions. Organizations cannot safely give agents unilateral access to payments or sensitive operations because traditional IAM provides static keys that can be hijacked.
