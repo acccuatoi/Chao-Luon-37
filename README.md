@@ -18,21 +18,21 @@ The blocker is not the model's skill but its authority. A prompt injection, a ha
 Finance teams can let an agent prepare payments from plain-language requests while keeping control. Even a fully jailbroken agent cannot pay anyone: it has no keys, and its output must match the one allowed action.
 
 ### 4. Why TideCloak matters
-TideCloak decides who may ask and who may approve (`requester`, `approver` roles) and the backend verifies a TideCloak token on every call. Approvals must come from distinct accounts, never the requester; the number of approvers is a policy setting (2 by default). Using TideCloak's own quorum-enforced signing and E2EE is our next step.
+TideCloak decides who may ask and who may approve (`requester`, `approver` roles) and the backend verifies a TideCloak token on every call. Approvals must come from a different account than the requester. Using TideCloak's own quorum-enforced signing and E2EE is our next step.
 
 ### 5. Prototype & storytelling
-1. A valid invoice waits for approval, then runs as a simulated payment.
-2. Every payment names a bank account (typed or QR); only approved accounts pass, so a QR naming AWS with a look-alike account is blocked.
-3. Unknown payees and spending over the rolling 24h limit are blocked.
-4. A prompt injection produces a disallowed action and is thrown away.
-5. Calling the execute endpoint directly returns 403 and is logged.
-6. The audit log is a SHA-256 hash chain; any edit breaks it.
+The demo video shows:
+1. **Typed requests.** A payment to an approved bank account waits for approval. Requests without a bank account, or with a prompt injection, are blocked.
+2. **QR payments.** An approved QR waits for approval. A QR that says AWS but points to another account is blocked. A QR with instructions hidden in its memo is flagged high risk.
+3. **Approval.** A different, approved user releases each payment (simulated) and the requester's remaining daily budget drops.
+
+Also built: refused direct execution (HTTP 403) and a SHA-256 hash-chained audit log.
 
 ---
 
 ## Demo Video
-- Video: [`submission/demo_video/demo.mp4`](submission/demo_video/demo.mp4) (about 2 minutes); script in [`submission/demo_video/video_script.md`](submission/demo_video/video_script.md)
-- Outline: the risk of giving an AI agent payment power, then the prototype (sign-in with TideCloak, agent proposal, policy blocks, QR look-alike, approval, refused direct execution, audit chain), then what changes.
+- Video: [`submission/demo_video/demo.mp4`](submission/demo_video/demo.mp4) (about 2 minutes, no voice-over); plan in [`submission/demo_video/video_script.md`](submission/demo_video/video_script.md)
+- Flow: the requester sends typed payment requests, then uploads payment QR codes; the approver reviews and approves them; the requester's open requests and remaining budget update.
 
 ---
 
@@ -91,6 +91,12 @@ NEXT_PUBLIC_USE_MOCK=false npm run dev:frontend
 # NEXT_PUBLIC_USE_MOCK=true npm run dev:frontend
 ```
 Open `http://localhost:3000` in your browser.
+
+### 6. Users, roles and demo data
+- Give each person a realm role, `requester` or `approver`, and link their Tide account: `bash backend/init/team-users.sh status | roles | link <username> | approve` (run from the repo root; it prints enrollment links, never secrets). Each person signs in from their own browser profile.
+- Payments must name a bank account and bank. Only accounts in `POLICY_ACCOUNTS` (`backend/.env.example`, fictional demo accounts) can be paid. Example request: `Pay AWS Cloud Services 1,200 USD to account 0011004455667 at Vietcombank, memo "INV-2026-10"`.
+- Demo payment QR codes are in `backend/demo/qr/` (see `backend/demo/README.md`); upload one with "Upload QR image".
+- Approver count and daily limit: `POLICY_REQUIRED_APPROVALS`, `POLICY_DAILY_CAP_USD` in `backend/.env.local`.
 
 ## Known limitations
 - The recorded demo uses **one approver** (`POLICY_REQUIRED_APPROVALS=1`): TideCloak's free plan (5 licences) hit its user limit while we enrolled a third teammate. Set `POLICY_REQUIRED_APPROVALS=2` in `backend/.env.local` for the two-person rule; it is enforced by the backend and covered by our tests.
