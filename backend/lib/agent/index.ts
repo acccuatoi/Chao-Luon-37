@@ -59,10 +59,18 @@ async function callOpenAiCompat(text: string): Promise<unknown> {
         ],
       });
     const post = (jsonMode: boolean) =>
-      fetch(`${base}/chat/completions`, { method: "POST", headers, body: body(jsonMode), signal: AbortSignal.timeout(20_000) });
-    let res = await post(true);
-    // Some providers reject response_format; retry once without it.
-    if (res.status === 400) res = await post(false);
+      fetch(`${base}/chat/completions`, { method: "POST", headers, body: body(jsonMode), signal: AbortSignal.timeout(12_000) });
+    let res: Response;
+    try {
+      res = await post(true);
+      // Some providers reject response_format; retry once without it.
+      if (res.status === 400) res = await post(false);
+    } catch (e) {
+      // Timeout or network error: try the next model.
+      lastError = `${(e as Error).name === "TimeoutError" ? "timeout" : "network error"} on ${model}`;
+      console.warn(`${lastError}, trying next model`);
+      continue;
+    }
     if (res.status === 429 || res.status === 503 || res.status === 404) {
       lastError = `LLM HTTP ${res.status} on ${model}`;
       console.warn(`${lastError}, trying next model`);
@@ -141,7 +149,15 @@ export async function proposeAction(text: string): Promise<AgentResult> {
   try {
     raw = agent === "llm" ? await callLlm(text) : mockPropose(text);
   } catch (e) {
-    return { agent, proposal: null, rejectedReason: `agent error: ${(e as Error).message}` };
+    // The LLM is unreachable or overloaded. By default fall back to the offline parser, and say so in the
+    // proposal, so the demo keeps working without pretending an AI drafted it. LLM_FALLBACK_TO_MOCK=false disables this.
+    if (process.env.LLM_FALLBACK_TO_MOCK === "false") {
+      return { agent, proposal: null, rejectedReason: `agent error: ${(e as Error).message}` };
+    }
+    console.warn(`LLM unavailable (${(e as Error).message}); using the offline parser`);
+    const fallback = mockPropose(text) as { reason?: string };
+    fallback.reason = `Drafted by the offline parser because the LLM was unavailable (${(e as Error).message})`;
+    raw = fallback;
   }
   const v = validateProposal(raw);
   if (!v.ok) return { agent, proposal: null, rejectedReason: v.reason };

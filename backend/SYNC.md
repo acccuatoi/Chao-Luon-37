@@ -76,3 +76,4 @@ TideCloak (Docker, port 8080) must be running for real token checks.
 - 13:05 BACKEND: agent can also use any OpenAI-compatible API (env `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`), so a free tier or local Ollama works. 20 s timeout on LLM calls.
 - 15:20 BACKEND: the rolling 24h cap is now per requester account (each person has their own $5,000 budget); blockedReason wording updated.
 - 15:25 BACKEND: visibility per account. GET /api/requests and GET /api/audit return everything only to approvers; other users get only their own requests and the audit entries about them.
+- 15:55 BACKEND: if every LLM model fails (503/timeout), the offline parser drafts the proposal and the proposal's note says so (LLM_FALLBACK_TO_MOCK=false to block instead). Per-model timeout 12 s.
