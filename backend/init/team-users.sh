@@ -14,7 +14,7 @@ REALM="${NEW_REALM_NAME:-nextjs-test}"
 KC_USER="${KC_USER:-admin}"
 KC_PASSWORD="${KC_PASSWORD:-password}"
 # username:role[,role]
-TEAM="${TEAM:-nguyen_manh_thang:requester tran_duc_phuc:approver vo_duc_anh:approver admin:requester,approver}"
+TEAM="${TEAM:-vo_duc_anh:requester nguyen_manh_thang:approver tran_duc_phuc:approver admin:requester,approver}"
 
 command -v jq >/dev/null || { echo "Missing jq (brew install jq)"; exit 1; }
 
