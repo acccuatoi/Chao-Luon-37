@@ -57,8 +57,9 @@ export default function NewRequestPage() {
         <div>
           <h1 className={styles.pageTitle}>Ask the agent to make a payment</h1>
           <p className={styles.lede}>
-            The agent turns your words into a payment proposal. It cannot send money itself: {needed} different people
-            must approve first, and the rules on the right are checked before anyone sees it.
+            The agent turns your words into a payment proposal. It cannot send money itself:{' '}
+            {needed === 1 ? 'an approver other than you' : `${needed} different people other than you`} must approve
+            first, and the rules on the right are checked before anyone sees it.
           </p>
         </div>
       </div>
@@ -107,7 +108,7 @@ export default function NewRequestPage() {
             <div className={styles.ruleCaption}>Per person: your paid plus waiting payments in any 24 hours</div>
           </div>
           <div>
-            <div className={styles.ruleFigure}>{needed} people</div>
+            <div className={styles.ruleFigure}>{needed} {needed === 1 ? 'approver' : 'approvers'}</div>
             <div className={styles.ruleCaption}>Must approve each payment. Nobody can approve their own request.</div>
           </div>
           <div>

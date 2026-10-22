@@ -60,8 +60,8 @@ function sealText(req: Request) {
   }
   return (
     <>
-      <strong>{left} more approval{left === 1 ? '' : 's'} needed.</strong> The agent cannot pay on its own. Approvers must be different
-      people, and not the requester.
+      <strong>{left} more approval{left === 1 ? '' : 's'} needed.</strong> The agent cannot pay on its own.{' '}
+      {req.requiredApprovals > 1 ? 'Approvers must be different people, and not the requester.' : 'The approver cannot be the requester.'}
     </>
   );
 }

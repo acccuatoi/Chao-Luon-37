@@ -32,7 +32,7 @@ export default function Steps({ req }: { req: Request | null }) {
       </li>
       <li className={cls(s3)}>
         <div className={styles.stepNum}>3</div>
-        <div className={styles.stepName}>Two people approve</div>
+        <div className={styles.stepName}>{needed === 1 ? 'An approver signs off' : `${needed} people approve`}</div>
         <div className={styles.stepHint}>{blocked ? 'Blocked by rules' : `${approvals} of ${needed} approved`}</div>
       </li>
       <li className={cls(s4)}>

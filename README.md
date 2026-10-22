@@ -4,7 +4,7 @@
 
 ## Project overview
 
-_An AI agent that can only propose payments: nothing runs until two different TideCloak-authenticated people approve, every step is checked against policy, and every event lands in a tamper-evident audit log._
+_An AI agent that can only propose payments: nothing runs until a TideCloak-authenticated approver other than the requester signs off, every step is checked against policy, and every event lands in a tamper-evident audit log._
 
 Built with [TideCloak](https://tide.org/tidecloak?utm_source=github&utm_medium=readme&utm_campaign=unlocked).
 
@@ -18,10 +18,10 @@ The blocker is not the model's skill but its authority. A prompt injection, a ha
 Finance teams can let an agent prepare payments from plain-language requests while keeping control. Even a fully jailbroken agent cannot pay anyone: it has no keys, and its output must match the one allowed action.
 
 ### 4. Why TideCloak matters
-TideCloak decides who may ask and who may approve (`requester`, `approver` roles) and the backend verifies a TideCloak token on every call. Approvals must come from two distinct accounts, never the requester. Using TideCloak's own quorum-enforced signing and E2EE is our next step.
+TideCloak decides who may ask and who may approve (`requester`, `approver` roles) and the backend verifies a TideCloak token on every call. Approvals must come from distinct accounts, never the requester; the number of approvers is a policy setting (2 by default). Using TideCloak's own quorum-enforced signing and E2EE is our next step.
 
 ### 5. Prototype & storytelling
-1. A valid invoice waits for 2 approvals, then runs as a simulated payment.
+1. A valid invoice waits for approval, then runs as a simulated payment.
 2. A second in-policy payment (office rent) shows the same flow.
 3. Unknown payees and spending over the rolling 24h limit are blocked.
 4. A prompt injection produces a disallowed action and is thrown away.
@@ -95,3 +95,10 @@ NEXT_PUBLIC_USE_MOCK=false npm run dev:frontend
 # NEXT_PUBLIC_USE_MOCK=true npm run dev:frontend
 ```
 Open `http://localhost:3000` in your browser.
+
+## Known limitations
+- The recorded demo uses **one approver** (`POLICY_REQUIRED_APPROVALS=1`): TideCloak's free plan (5 licences) hit its user limit while we enrolled a third teammate. Set `POLICY_REQUIRED_APPROVALS=2` in `backend/.env.local` for the two-person rule; it is enforced by the backend and covered by our tests.
+- Payments are simulated; no money moves.
+- Approval quorum is enforced by our backend, not yet by TideCloak's quorum-enforced signing; E2EE is not implemented.
+- Requests and the audit log are stored in a local JSON file (`backend/.data/db.json`).
+- Tide's network returned intermittent 502/503 errors during the event, which slowed user enrolment.

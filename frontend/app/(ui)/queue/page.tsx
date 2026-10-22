@@ -110,7 +110,7 @@ export default function ApprovalsPage() {
           <p className={styles.lede}>
             {canAct && !isApprover
               ? 'You can see only your own requests here. People with the approver role see everyone\'s and decide.'
-              : 'Each payment needs approval from different people. The requester cannot approve, and nobody can approve twice.'}
+              : 'Each payment needs approval from someone other than the requester, and nobody can approve twice.'}
           </p>
         </div>
         {canAct && isApprover && (
