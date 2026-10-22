@@ -155,8 +155,8 @@ export default function Header() {
                 ))}
               </div>
 
-              {/* Role Toggle for testing (Only visible in mock mode or when not logged in) */}
-              {mockActive && (
+              {/* Role Toggle for testing (Visible in mock mode or dev bypass when not authenticated) */}
+              {(mockActive || !authenticated) && (
                 <select
                   className={styles.roleSelect}
                   value={mockRole}
