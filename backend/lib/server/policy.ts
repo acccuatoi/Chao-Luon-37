@@ -20,7 +20,7 @@ export type Verdict = { ok: true; requiredApprovals: number } | { ok: false; rea
 
 const norm = (s: string) => s.normalize("NFC").trim().toLowerCase();
 
-/** Pure policy check. `spentLast24hUsd` = executed + still-pending amounts created in the last 24h. */
+/** Pure policy check. `spentLast24hUsd` = this requester's executed + still-pending amounts in the last 24h. */
 export function evaluatePolicy(proposal: Proposal, spentLast24hUsd: number): Verdict {
   if (!(ALLOWED_ACTIONS as readonly string[]).includes(proposal.action)) {
     return { ok: false, reason: `Blocked by policy: action "${proposal.action}" is not allowed.` };
@@ -35,7 +35,7 @@ export function evaluatePolicy(proposal: Proposal, spentLast24hUsd: number): Ver
     reasons.push("amount is invalid");
   } else if (spentLast24hUsd + amount > POLICY.dailyCapUsd) {
     reasons.push(
-      `amount ($${amount}) plus $${spentLast24hUsd} already committed by the whole team in the last 24h (paid or waiting for approval) exceeds the shared rolling daily cap ($${POLICY.dailyCapUsd})`,
+      `amount ($${amount}) plus $${spentLast24hUsd} you already committed in the last 24h (paid or waiting for approval) exceeds your rolling daily limit ($${POLICY.dailyCapUsd})`,
     );
   }
   if (reasons.length) return { ok: false, reason: `Blocked by policy: ${reasons.join("; ")}.` };

@@ -83,10 +83,17 @@ export const listRequests = (): Request[] =>
   [...db.requests].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(pub);
 export const listAudit = (): AuditEntry[] => [...db.audit].reverse();
 
-function spentLast24h(): number {
+// Each account has its own rolling 24h budget: only this requester's paid + waiting payments count.
+function spentLast24h(requesterId: string): number {
   const since = Date.now() - DAY_MS;
   return db.requests
-    .filter((r) => (r.status === "executed" || r.status === "pending") && r.proposal && Date.parse(r.createdAt) >= since)
+    .filter(
+      (r) =>
+        r.requesterId === requesterId &&
+        (r.status === "executed" || r.status === "pending") &&
+        r.proposal &&
+        Date.parse(r.createdAt) >= since,
+    )
     .reduce((sum, r) => sum + Number(r.proposal!.params.amount ?? 0), 0);
 }
 
@@ -106,7 +113,7 @@ export function createRequest(
       ? `Blocked: the agent's reply could not be used (${rejectedReason.replace(/^agent error: /, "")}). Nothing was sent to approvers; try again.`
       : `Blocked: AI output rejected by schema check (${rejectedReason ?? "invalid output"}).`;
   } else {
-    const v = evaluatePolicy(proposal, spentLast24h());
+    const v = evaluatePolicy(proposal, spentLast24h(requester.id));
     if (v.ok) requiredApprovals = v.requiredApprovals;
     else {
       status = "blocked";

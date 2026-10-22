@@ -104,7 +104,7 @@ export default function NewRequestPage() {
           <h2 className={styles.label} style={{ margin: 0 }}>Rules in force</h2>
           <div>
             <div className={styles.ruleFigure}>{policy ? money(policy.dailyCapUsd) : '—'}</div>
-            <div className={styles.ruleCaption}>Shared by the whole team: paid plus waiting payments in any 24 hours</div>
+            <div className={styles.ruleCaption}>Per person: your paid plus waiting payments in any 24 hours</div>
           </div>
           <div>
             <div className={styles.ruleFigure}>{needed} people</div>
