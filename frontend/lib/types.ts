@@ -41,5 +41,11 @@ export type AuditEntry = {
 export type ApiStatus = {
   mode: "live" | "simulated";
   agent?: "llm" | "mock";
-  policy: { dailyCapUsd: number; whitelist: string[]; requiredApprovals?: number };
+  policy: {
+    dailyCapUsd: number;
+    whitelist: string[];
+    requiredApprovals?: number;
+    // Approved bank accounts (added 16:30): when a request names an account, only these can be paid.
+    accounts?: { name: string; bank: string; accountNumber: string }[];
+  };
 };

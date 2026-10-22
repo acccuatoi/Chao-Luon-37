@@ -83,7 +83,7 @@ export async function fetchRequests(): Promise<Request[]> {
   }
 }
 
-export async function submitRequest(text: string, requester: string = "", encryptedMemo?: string): Promise<Request> {
+export async function submitRequest(text: string, requester: string = "", encryptedMemo?: string, qr?: string): Promise<Request> {
   if (isMockMode()) {
     return mockCreateRequest(text, requester);
   }
@@ -91,6 +91,7 @@ export async function submitRequest(text: string, requester: string = "", encryp
   const headers = await getHeaders({ 'Content-Type': 'application/json' });
   const payload: any = { text };
   if (encryptedMemo) payload.encryptedMemo = encryptedMemo;
+  if (qr) payload.qr = qr;
 
   const res = await fetch('/api/requests', {
     method: 'POST',

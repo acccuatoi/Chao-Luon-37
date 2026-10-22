@@ -17,6 +17,30 @@ export default function NewRequestPage() {
   const { status } = useApiStatus();
 
   const [text, setText] = useState('');
+  // QR payment: decoded in the browser (Chrome BarcodeDetector) or pasted; the backend parses and checks it.
+  const [qr, setQr] = useState('');
+  const [qrNote, setQrNote] = useState<string | null>(null);
+
+  const readQrImage = async (file: File) => {
+    setQrNote(null);
+    try {
+      const Detector = (window as any).BarcodeDetector;
+      if (!Detector) {
+        setQrNote('This browser cannot read QR images. Paste the QR content instead.');
+        return;
+      }
+      const bitmap = await createImageBitmap(file);
+      const codes = await new Detector({ formats: ['qr_code'] }).detect(bitmap);
+      if (!codes.length) {
+        setQrNote('No QR code found in that image.');
+        return;
+      }
+      setQr(String(codes[0].rawValue));
+      setQrNote('QR code read. Check the details after sending; the server verifies it.');
+    } catch {
+      setQrNote('Could not read that image. Paste the QR content instead.');
+    }
+  };
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Only this user's own requests are shown here; everyone's requests are on the Approvals page.
@@ -39,13 +63,15 @@ export default function NewRequestPage() {
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || sending || !allowed) return;
+    if ((!text.trim() && !qr.trim()) || sending || !allowed) return;
     setSending(true);
     setError(null);
     try {
-      const created = await submitRequest(text.trim());
+      const created = await submitRequest(text.trim(), '', undefined, qr.trim() || undefined);
       setMine((prev) => [created, ...prev.filter((r) => r.id !== created.id)]);
       setText('');
+      setQr('');
+      setQrNote(null);
     } catch (err: any) {
       setError(err?.message || 'The request could not be sent.');
     } finally {
@@ -89,6 +115,31 @@ export default function NewRequestPage() {
             />
           </div>
 
+          <div>
+            <div className={styles.label}>Or pay a QR code</div>
+            <div className={styles.row}>
+              <label className={`${styles.btn} ${styles.btnGhost} ${styles.btnSmall}`}>
+                Upload QR image
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => e.target.files?.[0] && readQrImage(e.target.files[0])}
+                />
+              </label>
+              <span className={styles.muted}>or paste its content:</span>
+            </div>
+            <input
+              className={styles.input}
+              style={{ width: '100%', marginTop: 8 }}
+              value={qr}
+              onChange={(e) => setQr(e.target.value)}
+              placeholder="000201010212... (EMVCo / VietQR payment code)"
+              aria-label="QR content"
+            />
+            {qrNote && <p className={styles.muted} style={{ margin: '6px 0 0' }}>{qrNote}</p>}
+          </div>
+
           {error && (
             <div className={`${styles.notice} ${styles.noticeBad}`} role="alert">
               <div>
@@ -98,7 +149,7 @@ export default function NewRequestPage() {
           )}
 
           <div className={styles.row}>
-            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={!allowed || sending || !text.trim()}>
+            <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={!allowed || sending || (!text.trim() && !qr.trim())}>
               {sending && <span className={styles.spinner} aria-hidden />}
               {sending ? 'Agent is drafting…' : 'Send to agent'}
             </button>
@@ -124,6 +175,18 @@ export default function NewRequestPage() {
               ))}
             </ul>
           </div>
+          {policy?.accounts?.length ? (
+            <div>
+              <div className={styles.ruleCaption}>Approved bank accounts (checked when a request or QR names an account)</div>
+              <ul className={styles.payees}>
+                {policy.accounts.map((a) => (
+                  <li key={a.accountNumber}>
+                    {a.name}: <span className="mono">{a.accountNumber}</span> ({a.bank})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </aside>
       </div>
 

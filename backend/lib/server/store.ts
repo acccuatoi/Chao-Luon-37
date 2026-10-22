@@ -127,7 +127,9 @@ export function createRequest(
   let blockedReason: string | undefined;
   if (!proposal) {
     status = "blocked";
-    blockedReason = rejectedReason?.startsWith("agent error")
+    blockedReason = rejectedReason?.startsWith("QR rejected")
+      ? `Blocked: ${rejectedReason}.`
+      : rejectedReason?.startsWith("agent error")
       ? `Blocked: the agent's reply could not be used (${rejectedReason.replace(/^agent error: /, "")}). Nothing was sent to approvers; try again.`
       : `Blocked: AI output rejected by schema check (${rejectedReason ?? "invalid output"}).`;
   } else {
@@ -190,7 +192,7 @@ export function approve(id: string, approver: Actor): ApproveResult {
     req.status = "executed";
     (req as StoredRequest & { executedAt?: string }).executedAt = new Date().toISOString();
     const p = req.proposal!.params;
-    log(GATE_ACTOR, "executed", id, `Quorum ${req.approvals.length}/${req.requiredApprovals} reached. SIMULATED transfer of ${p.amount} ${p.currency} to ${p.payee} (no real funds moved).`);
+    log(GATE_ACTOR, "executed", id, `Quorum ${req.approvals.length}/${req.requiredApprovals} reached. SIMULATED transfer of ${p.amount} ${p.currency} to ${p.payee}${p.accountNumber ? ` (account ${p.accountNumber}, ${p.bank})` : ""}${p.memo ? `, memo "${p.memo}"` : ""} (no real funds moved).`);
   }
   save();
   return { ok: true, request: withOverLimit(req) };

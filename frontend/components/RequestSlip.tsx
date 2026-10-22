@@ -113,6 +113,16 @@ export default function RequestSlip({ req, actions }: { req: Request; actions?: 
             <span>
               Risk <strong className={riskCls}>{p.risk}</strong>
             </span>
+            {p.params.accountNumber && (
+              <span>
+                Account <strong className="mono">{String(p.params.accountNumber)}</strong> {String(p.params.bank ?? '')}
+              </span>
+            )}
+            {p.params.memo && (
+              <span>
+                Memo <strong>{String(p.params.memo)}</strong>
+              </span>
+            )}
             {p.reason && (
               <span>
                 Agent's note <strong>{p.reason}</strong>

@@ -1,4 +1,5 @@
 import type { Proposal } from "../../types";
+import { findApproved, bankName } from "./bank";
 
 // Policy values come from env (see .env.example). The UI reads them from GET /api/status.
 export const POLICY = {
@@ -35,7 +36,14 @@ export function evaluatePolicy(proposal: Proposal, spentLast24hUsd: number, requ
   const reasons: string[] = [];
   // One request = one payment. Otherwise the agent would silently drop the others.
   if (countAmounts(requestText) > 1) reasons.push("the request asks for more than one payment; send one payment per request");
-  if (!POLICY.whitelist.some((w) => norm(w) === norm(payee))) {
+  const account = proposal.params.accountNumber ? String(proposal.params.accountNumber) : "";
+  if (account) {
+    // With a bank account, the approved ACCOUNT list decides; the name on the request does not matter.
+    const bin = String(proposal.params.bankBin ?? "");
+    if (!findApproved(bin, account)) {
+      reasons.push(`bank account ${account} at ${bin ? bankName(bin) : "an unknown bank"} is not on the approved account list`);
+    }
+  } else if (!POLICY.whitelist.some((w) => norm(w) === norm(payee))) {
     reasons.push(`payee '${payee}' is not on the approved whitelist`);
   }
   if (!Number.isFinite(amount) || amount <= 0) {

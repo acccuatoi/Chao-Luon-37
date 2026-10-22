@@ -2,6 +2,7 @@ import type { Proposal } from "../../types";
 import { POLICY } from "../server/policy";
 import { validateProposal } from "./schema";
 import { resolvePayee } from "../server/payee";
+import { extractBankDetails, applyBankDetails, proposalFromQr } from "../server/bank";
 
 export type AgentMode = "llm" | "mock";
 export type AgentResult = { agent: AgentMode; proposal: Proposal | null; rejectedReason?: string };
@@ -168,5 +169,14 @@ export async function proposeAction(text: string): Promise<AgentResult> {
   v.proposal.params.payee = check.approved
     ? check.payee
     : check.asWritten || `${check.payee} (not named in the request)`;
+  // Bank details (account number, bank, memo) are read from the text by code, never taken from the model.
+  const bank = extractBankDetails(text);
+  if (bank) applyBankDetails(v.proposal, bank);
   return { agent, proposal: v.proposal };
+}
+
+/** Payment from a QR code: parsed deterministically, the model is not involved. */
+export function proposeFromQr(qrText: string): AgentResult {
+  const r = proposalFromQr(qrText);
+  return { agent: agentMode(), proposal: r.proposal, rejectedReason: r.reason };
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticate, callerHasRole } from "../../../lib/server/auth";
 import { createRequest, listRequests } from "../../../lib/server/store";
 import { allow } from "../../../lib/server/rateLimit";
-import { proposeAction } from "../../../lib/agent";
+import { proposeAction, proposeFromQr } from "../../../lib/agent";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +20,17 @@ export async function POST(req: NextRequest) {
   }
   let text = "";
   let encryptedMemo: string | undefined;
+  let qr = "";
   try {
-    const body = (await req.json()) as { text?: unknown; encryptedMemo?: unknown };
+    const body = (await req.json()) as { text?: unknown; encryptedMemo?: unknown; qr?: unknown };
     text = typeof body.text === "string" ? body.text.normalize("NFC").trim() : "";
+    if (body.qr !== undefined) {
+      if (typeof body.qr !== "string" || body.qr.length > 1000) {
+        return NextResponse.json({ error: "qr must be a string (max 1000 characters)" }, { status: 400 });
+      }
+      qr = body.qr.trim();
+      if (!text) text = "Pay by QR code";
+    }
     if (body.encryptedMemo !== undefined) {
       if (typeof body.encryptedMemo !== "string" || body.encryptedMemo.length > 20000) {
         return NextResponse.json({ error: "encryptedMemo must be a string (max 20000 characters)" }, { status: 400 });
@@ -36,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "text is required (max 2000 characters)" }, { status: 400 });
   }
   // Only `text` goes to the agent. The encrypted memo is stored as opaque ciphertext and never decrypted here.
-  const result = await proposeAction(text);
+  const result = qr ? proposeFromQr(qr) : await proposeAction(text);
   return NextResponse.json(createRequest(auth.actor, text, result.proposal, result.rejectedReason, encryptedMemo), {
     status: 201,
   });
