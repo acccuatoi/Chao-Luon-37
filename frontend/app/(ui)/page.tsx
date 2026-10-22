@@ -69,7 +69,7 @@ export default function NewRequestPage() {
         </div>
       </div>
 
-      <Steps req={latest} />
+      <Steps req={latest} policyApprovals={needed} />
 
       <div className={styles.split}>
         <form className={`${styles.panel} ${styles.stack}`} onSubmit={send}>

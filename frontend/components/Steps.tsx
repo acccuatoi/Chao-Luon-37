@@ -3,11 +3,11 @@ import { Request } from '../lib/types';
 import styles from './styles.module.css';
 
 /** The four stages every request goes through, coloured by where the latest request is. */
-export default function Steps({ req }: { req: Request | null }) {
+export default function Steps({ req, policyApprovals = 1 }: { req: Request | null; policyApprovals?: number }) {
   const blocked = req?.status === 'blocked';
   const executed = req?.status === 'executed';
   const approvals = req?.approvals.length ?? 0;
-  const needed = req?.requiredApprovals ?? 2;
+  const needed = req?.requiredApprovals ?? policyApprovals;
 
   type S = 'idle' | 'active' | 'done' | 'bad';
   const s1: S = req ? 'done' : 'active';
@@ -37,8 +37,8 @@ export default function Steps({ req }: { req: Request | null }) {
       </li>
       <li className={cls(s4)}>
         <div className={styles.stepNum}>4</div>
-        <div className={styles.stepName}>Payment runs</div>
-        <div className={styles.stepHint}>{executed ? 'Done (simulated)' : blocked ? 'Never runs' : 'Simulated'}</div>
+        <div className={styles.stepName}>Payment is made</div>
+        <div className={styles.stepHint}>{executed ? 'Paid (simulated, no real money)' : blocked ? 'Never runs' : 'Only after approval; simulated'}</div>
       </li>
     </ol>
   );
