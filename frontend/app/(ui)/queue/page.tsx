@@ -8,7 +8,7 @@ import RequestSlip from '../../../components/RequestSlip';
 import SignInNotice from '../../../components/SignInNotice';
 import styles from '../../../components/styles.module.css';
 
-type Tab = 'waiting' | 'all';
+type Tab = 'waiting' | 'finished';
 
 export default function ApprovalsPage() {
   const { canAct, currentUser, hasRole, isMock, devBypass, authenticated } = useRoleContext();
@@ -99,7 +99,8 @@ export default function ApprovalsPage() {
   };
 
   const waiting = requests.filter((r) => r.status === 'pending' || r.status === 'approved');
-  const shown = tab === 'waiting' ? waiting : requests;
+  const finished = requests.filter((r) => r.status === 'executed' || r.status === 'blocked');
+  const shown = tab === 'waiting' ? waiting : finished;
 
   const toneCls = { bad: styles.noticeBad, ok: styles.noticeOk, info: styles.noticeInfo };
 
@@ -143,8 +144,8 @@ export default function ApprovalsPage() {
             <button type="button" role="tab" aria-selected={tab === 'waiting'} className={`${styles.tab} ${tab === 'waiting' ? styles.tabActive : ''}`} onClick={() => setTab('waiting')}>
               Waiting<span className={styles.count}>{waiting.length}</span>
             </button>
-            <button type="button" role="tab" aria-selected={tab === 'all'} className={`${styles.tab} ${tab === 'all' ? styles.tabActive : ''}`} onClick={() => setTab('all')}>
-              All requests<span className={styles.count}>{requests.length}</span>
+            <button type="button" role="tab" aria-selected={tab === 'finished'} className={`${styles.tab} ${tab === 'finished' ? styles.tabActive : ''}`} onClick={() => setTab('finished')}>
+              Finished<span className={styles.count}>{finished.length}</span>
             </button>
           </div>
 
@@ -162,7 +163,7 @@ export default function ApprovalsPage() {
             </div>
           ) : shown.length === 0 ? (
             <div className={styles.empty}>
-              {tab === 'waiting' ? 'Nothing is waiting for approval.' : 'No requests yet. Send one from New request.'}
+              {tab === 'waiting' ? 'Nothing is waiting for approval.' : 'Nothing finished yet. Paid and blocked requests appear here.'}
             </div>
           ) : (
             <div className={styles.stack}>

@@ -45,7 +45,11 @@ export default function NewRequestPage() {
   const [error, setError] = useState<string | null>(null);
   // Only this user's own requests are shown here; everyone's requests are on the Approvals page.
   const [mine, setMine] = useState<Request[]>([]);
+  const [lastSentId, setLastSentId] = useState<string | null>(null);
   const latest = mine[0] ?? null;
+  // This page keeps only what is still open (waiting for approval), plus the result of the last request sent.
+  // Finished requests (paid or blocked) live on the Approvals page under "Finished".
+  const open = mine.filter((r, i) => r.status === 'pending' || r.status === 'approved' || (i === 0 && r.id === lastSentId));
 
   useEffect(() => {
     if (!canAct) return;
@@ -69,6 +73,7 @@ export default function NewRequestPage() {
     try {
       const created = await submitRequest(text.trim(), '', undefined, qr.trim() || undefined);
       setMine((prev) => [created, ...prev.filter((r) => r.id !== created.id)]);
+      setLastSentId(created.id);
       setText('');
       setQr('');
       setQrNote(null);
@@ -199,10 +204,10 @@ export default function NewRequestPage() {
         </aside>
       </div>
 
-      <h2 className={styles.sectionTitle}>Your requests{mine.length ? ` (${mine.length})` : ''}</h2>
-      {mine.length > 0 ? (
+      <h2 className={styles.sectionTitle}>Your open requests{open.length ? ` (${open.length})` : ''}</h2>
+      {open.length > 0 ? (
         <div className={styles.stack}>
-        {mine.map((r) => (
+        {open.map((r) => (
         <RequestSlip
           key={r.id}
           req={r}
@@ -218,7 +223,7 @@ export default function NewRequestPage() {
         </div>
       ) : (
         <div className={styles.empty}>
-          {canAct ? 'You have not sent any requests yet. Describe a payment above and send it to the agent.' : 'Sign in to see your requests.'}
+          {canAct ? mine.length ? 'Nothing is waiting. Paid and blocked requests are on the Approvals page under Finished.' : 'You have not sent any requests yet. Describe a payment above and send it to the agent.' : 'Sign in to see your requests.'}
         </div>
       )}
     </>
