@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useTideCloak } from '@tidecloak/nextjs';
 import { isMockMode, setAuthHeaderProvider } from '../lib/ui/api';
 
@@ -9,6 +9,9 @@ import { isMockMode, setAuthHeaderProvider } from '../lib/ui/api';
 // - Mock mode (NEXT_PUBLIC_USE_MOCK=true) or dev bypass (NEXT_PUBLIC_DEV_AUTH_BYPASS=true, backend DEV_AUTH_BYPASS=true):
 //   a test identity chosen in the header is used, and sent as x-dev-user / x-dev-role headers (dev bypass only).
 export const isDevBypass = (): boolean => process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
+
+const WANT_SESSION_KEY = 'sentinel.keepSession';
+const AUTO_LOGIN_KEY = 'sentinel.autoLoginAt';
 
 export type TestRole = 'requester' | 'approver' | 'both' | 'observer';
 
@@ -108,6 +111,24 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     setAuthHeaderProvider(getAuthHeaders);
   }, [getAuthHeaders]);
 
+  // Keep the session across reloads. The SDK's silent check does not restore the Tide session in this setup,
+  // so if the user signed in earlier (and has not signed out) we send them through Sign in again; TideCloak
+  // still has their session and returns straight away. A short guard prevents redirect loops.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (useTestIdentity || isInitializing || authenticated || autoTried.current) return;
+    autoTried.current = true;
+    try {
+      if (localStorage.getItem(WANT_SESSION_KEY) !== '1') return;
+      const last = Number(sessionStorage.getItem(AUTO_LOGIN_KEY) ?? 0);
+      if (Date.now() - last < 30_000) return; // tried moments ago and still signed out: stop
+      sessionStorage.setItem(AUTO_LOGIN_KEY, String(Date.now()));
+    } catch {
+      return;
+    }
+    if (typeof login === 'function') login();
+  }, [useTestIdentity, isInitializing, authenticated, login]);
+
   const value: RoleContextType = {
     authenticated,
     isInitializing,
@@ -119,8 +140,22 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     hasRole,
     testRole,
     setTestRole,
-    login: () => (typeof login === 'function' ? login() : undefined),
-    logout: () => (typeof logout === 'function' ? logout() : undefined),
+    login: () => {
+      try {
+        localStorage.setItem(WANT_SESSION_KEY, '1');
+      } catch {
+        /* storage blocked: reload will just ask to sign in */
+      }
+      return typeof login === 'function' ? login() : undefined;
+    },
+    logout: () => {
+      try {
+        localStorage.removeItem(WANT_SESSION_KEY);
+      } catch {
+        /* ignore */
+      }
+      return typeof logout === 'function' ? logout() : undefined;
+    },
   };
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
