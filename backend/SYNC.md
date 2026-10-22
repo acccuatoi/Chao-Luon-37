@@ -47,7 +47,7 @@ TideCloak (Docker, port 8080) must be running for real token checks.
 - `POST /api/requests/:id/execute`: always 403 and audited, to show that nobody can skip the quorum.
 - `GET /api/status`: `{ mode, agent, policy: { dailyCapUsd, whitelist } }`.
   - `mode: "live"` = real TideCloak token verification; `"simulated"` = `DEV_AUTH_BYPASS=true`.
-  - `agent: "llm"` when `ANTHROPIC_API_KEY` is set, else `"mock"` (offline keyword parser, not AI).
+  - `agent: "llm"` when `ANTHROPIC_API_KEY` is set, or `LLM_BASE_URL` + `LLM_MODEL` for an OpenAI-compatible provider (Gemini, Groq, OpenRouter, Ollama); else `"mock"` (offline keyword parser, not AI).
 - `POST /api/requests` also accepts optional `encryptedMemo` (string, max 20000): ciphertext made in the browser with TideCloak `doEncrypt`. Stored and returned as is; never decrypted by the backend, never sent to the agent.
 - Rate limit: max `RATE_LIMIT_PER_MIN` (default 10) creates per user per minute, else 429.
 - Audit log is a **hash chain**: each entry has `prevHash` and `hash = sha256(prevHash + fields)`. `GET /api/audit/verify` returns `{ ok, entries, headHash, brokenAt? }`; any edited, removed or reordered entry gives `ok: false`.
@@ -73,3 +73,4 @@ TideCloak (Docker, port 8080) must be running for real token checks.
 ## Handoff log
 - 12:40 BACKEND: turned `backend/` into a runnable API app on port 3001 (old `backend/api/protected` moved to `backend/app/api/protected`). Contract change (add-only): `ApiStatus.agent?: "llm" | "mock"`. Action name aligned with frontend: `transfer_funds`. Whitelist aligned with frontend mock. Status codes aligned with this file (400 for self/duplicate/not pending).
 - 13:15 BACKEND: added hash-chained audit (`prevHash`, `hash`, `GET /api/audit/verify`), JSON file persistence, per-user rate limit, `POST /api/admin/reset`, optional `encryptedMemo` on requests (add-only contract changes). Execute attempts now record the caller from the token.
+- 13:05 BACKEND: agent can also use any OpenAI-compatible API (env `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`), so a free tier or local Ollama works. 20 s timeout on LLM calls.
