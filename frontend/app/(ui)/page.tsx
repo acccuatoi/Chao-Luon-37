@@ -199,10 +199,10 @@ export default function NewRequestPage() {
         </aside>
       </div>
 
-      <h2 className={styles.sectionTitle}>Your requests</h2>
+      <h2 className={styles.sectionTitle}>Your requests{mine.length ? ` (${mine.length})` : ''}</h2>
       {mine.length > 0 ? (
         <div className={styles.stack}>
-        {mine.slice(0, 5).map((r) => (
+        {mine.map((r) => (
         <RequestSlip
           key={r.id}
           req={r}
