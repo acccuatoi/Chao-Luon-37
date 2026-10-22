@@ -79,9 +79,18 @@ export function verifyAudit(): ChainCheck {
   return { ok: true, entries: db.audit.length, headHash: prev };
 }
 
-export const listRequests = (): Request[] =>
-  [...db.requests].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map(pub);
-export const listAudit = (): AuditEntry[] => [...db.audit].reverse();
+// Visibility: approvers see every request (they must review them); everyone else sees only their own.
+export const listRequests = (viewer: Actor, isApprover: boolean): Request[] =>
+  [...db.requests]
+    .filter((r) => isApprover || r.requesterId === viewer.id)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .map(pub);
+
+// Approvers see the full log; others see only entries about their own requests or made by them.
+export const listAudit = (viewer: Actor, isApprover: boolean): AuditEntry[] => {
+  const own = new Set(db.requests.filter((r) => r.requesterId === viewer.id).map((r) => r.id));
+  return [...db.audit].reverse().filter((e) => isApprover || own.has(e.requestId) || e.actor === viewer.name);
+};
 
 // Each account has its own rolling 24h budget: only this requester's paid + waiting payments count.
 function spentLast24h(requesterId: string): number {

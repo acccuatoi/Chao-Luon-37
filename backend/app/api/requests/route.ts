@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticate } from "../../../lib/server/auth";
+import { authenticate, callerHasRole } from "../../../lib/server/auth";
 import { createRequest, listRequests } from "../../../lib/server/store";
 import { allow } from "../../../lib/server/rateLimit";
 import { proposeAction } from "../../../lib/agent";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const auth = await authenticate(req, "offline_access");
   if ("error" in auth) return auth.error;
-  return NextResponse.json(listRequests());
+  return NextResponse.json(listRequests(auth.actor, await callerHasRole(req, "approver")));
 }
 
 export async function POST(req: NextRequest) {

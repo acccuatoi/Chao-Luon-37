@@ -91,7 +91,7 @@ export default function ApprovalsPage() {
 
   const whyNot = (req: Request): string | null => {
     if (!canAct) return 'Sign in to approve';
-    if (!isApprover) return 'Needs the approver role';
+    if (!isApprover) return null;
     if (req.requester === currentUser) return 'You asked for this one, so someone else must approve';
     if (req.approvals.some((a) => a.approver === currentUser)) return 'You already approved this';
     return null;
@@ -108,7 +108,9 @@ export default function ApprovalsPage() {
         <div>
           <h1 className={styles.pageTitle}>Approvals</h1>
           <p className={styles.lede}>
-            Each payment needs approval from different people. The requester cannot approve, and nobody can approve twice.
+            {canAct && !isApprover
+              ? 'You can see only your own requests here. People with the approver role see everyone\'s and decide.'
+              : 'Each payment needs approval from different people. The requester cannot approve, and nobody can approve twice.'}
           </p>
         </div>
         {canAct && isApprover && (
@@ -183,14 +185,16 @@ export default function ApprovalsPage() {
                           >
                             {busy === `run:${req.id}` ? 'Trying…' : 'Try to pay without approval'}
                           </button>
-                          <button
-                            type="button"
-                            className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
-                            onClick={() => approve(req)}
-                            disabled={!!reason || busy !== null}
-                          >
-                            {busy === `approve:${req.id}` ? 'Approving…' : 'Approve'}
-                          </button>
+                          {isApprover && (
+                            <button
+                              type="button"
+                              className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
+                              onClick={() => approve(req)}
+                              disabled={!!reason || busy !== null}
+                            >
+                              {busy === `approve:${req.id}` ? 'Approving…' : 'Approve'}
+                            </button>
+                          )}
                         </>
                       ) : undefined
                     }

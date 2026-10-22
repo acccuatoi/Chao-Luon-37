@@ -75,3 +75,4 @@ TideCloak (Docker, port 8080) must be running for real token checks.
 - 13:15 BACKEND: added hash-chained audit (`prevHash`, `hash`, `GET /api/audit/verify`), JSON file persistence, per-user rate limit, `POST /api/admin/reset`, optional `encryptedMemo` on requests (add-only contract changes). Execute attempts now record the caller from the token.
 - 13:05 BACKEND: agent can also use any OpenAI-compatible API (env `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`), so a free tier or local Ollama works. 20 s timeout on LLM calls.
 - 15:20 BACKEND: the rolling 24h cap is now per requester account (each person has their own $5,000 budget); blockedReason wording updated.
+- 15:25 BACKEND: visibility per account. GET /api/requests and GET /api/audit return everything only to approvers; other users get only their own requests and the audit entries about them.

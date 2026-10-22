@@ -41,3 +41,9 @@ export async function authenticate(req: NextRequest, role: string): Promise<Auth
     return fail(401, "Unauthorized: token verification failed");
   }
 }
+
+/** True when the caller (already authenticated) also holds `role`. Used to decide what a user may see. */
+export async function callerHasRole(req: NextRequest, role: string): Promise<boolean> {
+  const r = await authenticate(req, role);
+  return "actor" in r;
+}
