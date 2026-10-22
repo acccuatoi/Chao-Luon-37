@@ -6,7 +6,7 @@ export const POLICY = {
   requiredApprovals: Math.max(1, Number(process.env.POLICY_REQUIRED_APPROVALS ?? 2)),
   whitelist: (
     process.env.POLICY_WHITELIST ??
-    "AWS Cloud Services,Cloudflare Inc.,Office Lease Corp,Công ty Bất động sản Hòa Bình,Stripe Payouts,Google Workspace"
+    "AWS Cloud Services,Cloudflare Inc.,Office Lease Corp,Stripe Payouts,Google Workspace"
   )
     .split(",")
     .map((s) => s.trim())

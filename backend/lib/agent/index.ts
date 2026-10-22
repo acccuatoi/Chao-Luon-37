@@ -92,7 +92,6 @@ async function callLlm(text: string): Promise<unknown> {
 const ALIASES: [RegExp, string][] = [
   [/\baws\b|amazon/, "AWS Cloud Services"],
   [/cloudflare/, "Cloudflare Inc."],
-  [/hòa bình|hoa binh/, "Công ty Bất động sản Hòa Bình"],
   [/office lease|\blease\b|\brent\b/, "Office Lease Corp"],
   [/stripe/, "Stripe Payouts"],
   [/google/, "Google Workspace"],

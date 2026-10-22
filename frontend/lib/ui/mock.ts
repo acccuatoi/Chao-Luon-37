@@ -6,7 +6,6 @@ let mockPolicy = {
     "AWS Cloud Services",
     "Cloudflare Inc.",
     "Office Lease Corp",
-    "Công ty Bất động sản Hòa Bình",
     "Stripe Payouts",
     "Google Workspace"
   ]
@@ -198,7 +197,6 @@ export async function mockCreateRequest(text: string, requester: string): Promis
   }
 
   if (lower.includes("cloudflare")) payee = "Cloudflare Inc.";
-  else if (lower.includes("hòa bình") || lower.includes("hoa binh") || lower.includes("văn phòng")) payee = "Công ty Bất động sản Hòa Bình";
   else if (lower.includes("lease") || lower.includes("rent")) payee = "Office Lease Corp";
   else if (lower.includes("google")) payee = "Google Workspace";
   else if (lower.includes("stripe")) payee = "Stripe Payouts";

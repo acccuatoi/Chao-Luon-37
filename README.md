@@ -15,14 +15,14 @@ Teams want AI agents to handle payments, but an agent holding an API key is a si
 The blocker is not the model's skill but its authority. A prompt injection, a hallucination or a stolen key turns an agent with execution rights into an attacker. Today's tools give all-or-nothing access.
 
 ### 3. Value & impact
-Finance teams can let an agent prepare payments in plain English or Vietnamese while keeping control. Even a fully jailbroken agent cannot pay anyone: it has no keys, and its output must match the one allowed action.
+Finance teams can let an agent prepare payments from plain-language requests while keeping control. Even a fully jailbroken agent cannot pay anyone: it has no keys, and its output must match the one allowed action.
 
 ### 4. Why TideCloak matters
 TideCloak decides who may ask and who may approve (`requester`, `approver` roles) and the backend verifies a TideCloak token on every call. Approvals must come from two distinct accounts, never the requester. Using TideCloak's own quorum-enforced signing and E2EE is our next step.
 
 ### 5. Prototype & storytelling
 1. A valid invoice waits for 2 approvals, then runs as a simulated payment.
-2. The same request in Vietnamese is parsed the same way.
+2. A second in-policy payment (office rent) shows the same flow.
 3. Unknown payees and spending over the rolling 24h limit are blocked.
 4. A prompt injection produces a disallowed action and is thrown away.
 5. Calling the execute endpoint directly returns 403 and is logged.
