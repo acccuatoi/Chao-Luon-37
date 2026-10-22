@@ -22,7 +22,7 @@ TideCloak decides who may ask and who may approve (`requester`, `approver` roles
 
 ### 5. Prototype & storytelling
 1. A valid invoice waits for approval, then runs as a simulated payment.
-2. Pay by bank account or QR code: only approved accounts pass; a QR naming AWS with a look-alike account is blocked.
+2. Every payment names a bank account (typed or QR); only approved accounts pass, so a QR naming AWS with a look-alike account is blocked.
 3. Unknown payees and spending over the rolling 24h limit are blocked.
 4. A prompt injection produces a disallowed action and is thrown away.
 5. Calling the execute endpoint directly returns 403 and is logged.

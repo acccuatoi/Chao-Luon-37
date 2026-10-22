@@ -36,15 +36,16 @@ export function evaluatePolicy(proposal: Proposal, spentLast24hUsd: number, requ
   const reasons: string[] = [];
   // One request = one payment. Otherwise the agent would silently drop the others.
   if (countAmounts(requestText) > 1) reasons.push("the request asks for more than one payment; send one payment per request");
+  // Every payment must name a clear bank account (number + bank). The approved ACCOUNT list decides who can be
+  // paid; the payee name on the request does not matter.
   const account = proposal.params.accountNumber ? String(proposal.params.accountNumber) : "";
-  if (account) {
-    // With a bank account, the approved ACCOUNT list decides; the name on the request does not matter.
-    const bin = String(proposal.params.bankBin ?? "");
-    if (!findApproved(bin, account)) {
-      reasons.push(`bank account ${account} at ${bin ? bankName(bin) : "an unknown bank"} is not on the approved account list`);
-    }
-  } else if (!POLICY.whitelist.some((w) => norm(w) === norm(payee))) {
-    reasons.push(`payee '${payee}' is not on the approved whitelist`);
+  const bin = String(proposal.params.bankBin ?? "");
+  if (!account) {
+    reasons.push(`no bank account in the request for '${payee}': include the account number and bank, or pay a QR code`);
+  } else if (!bin) {
+    reasons.push(`bank not recognised for account ${account}: name the bank (e.g. Vietcombank, BIDV, Techcombank)`);
+  } else if (!findApproved(bin, account)) {
+    reasons.push(`bank account ${account} at ${bankName(bin)} is not on the approved account list`);
   }
   if (!Number.isFinite(amount) || amount <= 0) {
     reasons.push("amount is invalid");

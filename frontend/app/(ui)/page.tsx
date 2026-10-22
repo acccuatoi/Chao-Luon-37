@@ -80,6 +80,13 @@ export default function NewRequestPage() {
   };
 
   const policy = status?.policy;
+  // Remaining budget for the signed-in user: each approved (paid) payment in the last 24h is deducted.
+  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const paidToday = mine
+    .filter((r) => r.status === 'executed' && r.proposal)
+    .filter((r) => Date.parse(r.approvals[r.approvals.length - 1]?.at ?? r.createdAt) >= dayAgo)
+    .reduce((sum, r) => sum + Number(r.proposal!.params.amount ?? 0), 0);
+  const remaining = policy ? Math.max(0, policy.dailyCapUsd - paidToday) : null;
   const needed = policy?.requiredApprovals ?? 2;
 
   return (
@@ -103,13 +110,13 @@ export default function NewRequestPage() {
 
           <div>
             <label htmlFor="request-text" className={styles.label}>What should be paid?</label>
-            <p className={styles.muted} style={{ margin: '-4px 0 8px' }}>Only payees on the approved list can be paid, within the daily limit.</p>
+            <p className={styles.muted} style={{ margin: '-4px 0 8px' }}>Include the payee's bank account number and bank, or pay a QR code. Only approved accounts can be paid.</p>
             <textarea
               id="request-text"
               className={styles.textarea}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Describe the payment: who should be paid, how much, and what for. For example: Pay Cloudflare 300 USD for the CDN plan."
+              placeholder='Who, how much, which account and bank, and a memo. For example: Pay Cloudflare Inc. 300 USD to account 1903456789012 at Techcombank, memo "CDN plan"'
               disabled={sending}
               maxLength={2000}
             />
@@ -160,14 +167,16 @@ export default function NewRequestPage() {
         <aside className={`${styles.panel} ${styles.rules}`} aria-label="Rules in force">
           <h2 className={styles.label} style={{ margin: 0 }}>Rules in force</h2>
           <div>
-            <div className={styles.ruleFigure}>{policy ? money(policy.dailyCapUsd) : '—'}</div>
-            <div className={styles.ruleCaption}>Per person: payments already approved in any 24 hours. Waiting ones turn red if approving them would go over.</div>
+            <div className={styles.ruleFigure}>{remaining !== null ? money(remaining) : '—'}</div>
+            <div className={styles.ruleCaption}>
+              Left for you today: {policy ? money(policy.dailyCapUsd) : '—'} limit minus {money(paidToday)} already approved
+            </div>
           </div>
           <div>
             <div className={styles.ruleFigure}>{needed} {needed === 1 ? 'approver' : 'approvers'}</div>
             <div className={styles.ruleCaption}>Must approve each payment. Nobody can approve their own request.</div>
           </div>
-          <div>
+          <div style={{ display: 'none' }}>
             <div className={styles.ruleCaption}>Approved payees</div>
             <ul className={styles.payees}>
               {(policy?.whitelist ?? []).map((p) => (
@@ -177,7 +186,7 @@ export default function NewRequestPage() {
           </div>
           {policy?.accounts?.length ? (
             <div>
-              <div className={styles.ruleCaption}>Approved bank accounts (checked when a request or QR names an account)</div>
+              <div className={styles.ruleCaption}>Approved bank accounts: only these can be paid</div>
               <ul className={styles.payees}>
                 {policy.accounts.map((a) => (
                   <li key={a.accountNumber}>
