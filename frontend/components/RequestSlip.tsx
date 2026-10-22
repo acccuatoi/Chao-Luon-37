@@ -121,8 +121,10 @@ export default function RequestSlip({ req, actions }: { req: Request; actions?: 
       ) : (
         <div className={styles.facts}>
           <span>
-            <strong>The agent's answer was thrown away.</strong> It did not match the only allowed action, so nothing was sent
-            to approvers.
+            <strong>The agent's answer was thrown away.</strong>{' '}
+            {req.blockedReason?.includes('could not be used')
+              ? 'The reply could not be read, so nothing was sent to approvers. Send the request again.'
+              : 'It did not match the only allowed action, so nothing was sent to approvers.'}
           </span>
         </div>
       )}
