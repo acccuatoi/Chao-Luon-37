@@ -99,6 +99,7 @@ Open `http://localhost:3000` in your browser.
 ## Known limitations
 - The recorded demo uses **one approver** (`POLICY_REQUIRED_APPROVALS=1`): TideCloak's free plan (5 licences) hit its user limit while we enrolled a third teammate. Set `POLICY_REQUIRED_APPROVALS=2` in `backend/.env.local` for the two-person rule; it is enforced by the backend and covered by our tests.
 - Payments are simulated; no money moves.
+- DPoP (sender-constrained tokens) is turned off in the frontend; the backend accepts plain Bearer tokens. Enabling DPoP end to end is on the roadmap.
 - Approval quorum is enforced by our backend, not yet by TideCloak's quorum-enforced signing; E2EE is not implemented.
 - Requests and the audit log are stored in a local JSON file (`backend/.data/db.json`).
 - Tide's network returned intermittent 502/503 errors during the event, which slowed user enrolment.
