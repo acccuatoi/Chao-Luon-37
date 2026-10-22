@@ -282,20 +282,7 @@
 }
 .textarea:focus { outline: none; border-color: var(--seal); box-shadow: 0 0 0 3px var(--seal-soft); }
 
-.examples { display: flex; flex-wrap: wrap; gap: 8px; }
 
-.example {
-  text-align: left;
-  border: 1px dashed #b9c3d3;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  font-size: 0.82rem;
-  color: var(--ink-2);
-  cursor: pointer;
-}
-.example:hover { border-style: solid; border-color: var(--seal); color: var(--seal); }
-.exampleExpect { display: block; font-size: 0.74rem; color: var(--ink-3); }
 
 /* ---------- Rules panel ---------- */
 .rules { display: flex; flex-direction: column; gap: 14px; }
