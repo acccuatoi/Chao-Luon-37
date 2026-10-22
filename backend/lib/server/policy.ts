@@ -35,7 +35,7 @@ export function evaluatePolicy(proposal: Proposal, spentLast24hUsd: number): Ver
     reasons.push("amount is invalid");
   } else if (spentLast24hUsd + amount > POLICY.dailyCapUsd) {
     reasons.push(
-      `amount ($${amount}) plus $${spentLast24hUsd} already committed in the last 24h exceeds the rolling daily cap ($${POLICY.dailyCapUsd})`,
+      `amount ($${amount}) plus $${spentLast24hUsd} already committed by the whole team in the last 24h (paid or waiting for approval) exceeds the shared rolling daily cap ($${POLICY.dailyCapUsd})`,
     );
   }
   if (reasons.length) return { ok: false, reason: `Blocked by policy: ${reasons.join("; ")}.` };
