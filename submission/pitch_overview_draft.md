@@ -6,27 +6,28 @@
 ---
 
 ### Tóm tắt 1 câu (One-sentence description)
-> *SentinelAgent is a zero-master-key autonomous AI agent guardrail powered by TideCloak Emergent Authority that prevents prompt-injection jailbreaks and unauthorized data exfiltration.*
+> *SentinelAgent is a zero-master-key autonomous AI agent guardrail powered by TideCloak authentication and multi-party quorum governance that prevents prompt-injection jailbreaks and unauthorized execution.*
 
 ---
 
 ### 1. Vision & originality (Tầm nhìn & Tính độc đáo)
-Autonomous AI agents are revolutionizing workflows, but granting them raw API keys, database credentials, or unilateral execution power creates catastrophic security risks. **SentinelAgent** introduces a zero-master-key paradigm where AI agents never possess static secrets; tool execution and data decryption require dynamic, multi-party cryptographic quorum.
+Autonomous AI agents are revolutionizing workflows, but granting them raw execution power or unilateral access creates catastrophic security risks. **SentinelAgent (Cháo Lươn 37)** enforces a zero-master-key paradigm: AI agents can only formulate proposals; execution requires multi-party human quorum approval authenticated via TideCloak.
 
 ### 2. Trust constraint insight (Điểm nghẽn về niềm tin)
-Today, delegating high-stakes tasks to AI agents is blocked by fear of prompt injection, hallucinations, and rogue actions. Organizations cannot safely give agents access to financial tokens or customer databases because traditional IAM provides all-or-nothing power with static keys that can be leaked or stolen.
+Delegating high-stakes tasks to AI agents is blocked by fear of prompt injection, hallucinations, and rogue actions. Organizations cannot safely give agents unilateral access to payments or sensitive operations because traditional IAM provides static keys that can be hijacked.
 
 ### 3. Value & impact (Giá trị & Tác động)
-Enterprises can safely unleash autonomous agents for financial reconciliation, cloud DevOps, and customer operations. Even if an agent's LLM is completely jailbroken by malicious user inputs, sensitive assets remain cryptographically quarantined and inaccessible.
+Enterprises can safely unleash autonomous agents for financial workflows and operations. Even if an agent's LLM is completely jailbroken by adversarial user inputs, sensitive actions remain strictly quarantined and cannot execute without human quorum.
 
 ### 4. Why TideCloak matters (Vai trò cốt lõi của TideCloak)
-TideCloak provides **Emergent Authority**: authority synthesizes just-in-time only when policy, identity, and multi-node consensus align. No master key exists in the agent's prompt, memory, or host server. 4 independent Tide nodes verify policy boundaries and issue ephemeral, self-destructing session keys—refusing key release if an injection attack or unauthorized action is detected.
+TideCloak enforces cryptographically verified identity and role-based gatekeeping (`requester`, `approver`). Every request is authenticated with access tokens. The agent possesses no unilateral execution authority, and quorum gates ensure independent human consensus before actions proceed.
 
 ### 5. Prototype & storytelling (Bản nguyên mẫu & Trình diễn)
-Our prototype demonstrates an interactive Agent Execution Console. Judges can observe:
-1. **Legitimate Task:** Quorum verifies policy and synthesizes an ephemeral key to decrypt financial reports.
-2. **Prompt Injection Jailbreak:** A hijacked agent attempts to dump customer PII, but Tide nodes unanimously refuse key synthesis, instantly sandboxing the threat.
-3. **Host Root Bypass:** Demonstrates that even cloud operators cannot extract master keys.
+Our prototype demonstrates an interactive Governance & Quorum Console:
+1. **Legitimate Task (Bilingual):** AI structures English/Vietnamese requests into a payment proposal within policy, pending 2 human approvals.
+2. **Policy Guard:** Transfers breaching rolling 24h caps ($5,000) or unwhitelisted payees are blocked.
+3. **Prompt Injection Defense:** Hijacked instructions fail strict schema checks and are quarantined.
+4. **Quorum Bypass Rejection:** Direct execution attempts return 403 Forbidden and are immutably audited.
 
 ---
-**Số từ tiếng Anh:** ~255 từ (Đạt chuẩn < 300 từ của cuộc thi).
+**Word count (English 5 sections):** ~240 words (Compliant with < 300 words criteria).

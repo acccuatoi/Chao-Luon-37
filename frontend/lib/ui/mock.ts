@@ -141,10 +141,10 @@ let mockAuditEntries: AuditEntry[] = [
   {
     id: "aud-006",
     at: new Date(Date.now() - 3590000).toISOString(),
-    actor: "TideCloak Quorum Gate",
+    actor: "Quorum Gate",
     event: "executed",
     requestId: "req-103",
-    detail: "Execution triggered via TideCloak multi-party quorum. Ephemeral key synthesized and transaction completed."
+    detail: "Execution triggered after 2/2 quorum approvals. Simulated payment completed."
   },
   {
     id: "aud-007",
@@ -301,10 +301,10 @@ export async function mockApproveRequest(id: string, approver: string): Promise<
     mockAuditEntries.unshift({
       id: `aud-${(Date.now() + 2).toString().slice(-4)}`,
       at: new Date(Date.now() + 200).toISOString(),
-      actor: "TideCloak Quorum Gate",
+      actor: "Quorum Gate",
       event: "executed",
       requestId: req.id,
-      detail: `All ${req.requiredApprovals} approvals obtained. Action executed via TideCloak Quorum.`
+      detail: `All ${req.requiredApprovals} approvals obtained. Executed after quorum approval (simulated payment).`
     });
   } else {
     req.status = "pending";

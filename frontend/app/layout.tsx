@@ -7,8 +7,8 @@ import tcConfig from '../tidecloak.json'
 
 
 export const metadata: Metadata = {
-  title: 'My Tidecloak App',
-  description: 'A Next.js starter with Tidecloak',
+  title: 'SentinelAgent',
+  description: 'SentinelAgent (Cháo Lươn 37) - Quorum-Governed AI Agent with Multi-Party Approval',
 }
 
 interface RootLayoutProps {

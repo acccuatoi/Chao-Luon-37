@@ -3,52 +3,49 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTideCloak } from '@tidecloak/nextjs';
+import { useRoleContext } from './RoleContext';
 import { isMockMode, fetchStatus } from '../lib/ui/api';
 import { ApiStatus } from '../lib/types';
 import styles from './styles.module.css';
 
-interface HeaderProps {
-  currentRole?: string;
-  onRoleChange?: (role: string) => void;
-  currentUser?: string;
-}
-
-export default function Header({ currentRole = "approver", onRoleChange, currentUser }: HeaderProps) {
+export default function Header() {
   const pathname = usePathname();
+  const {
+    authenticated,
+    currentUser,
+    userRoles,
+    mockRole,
+    setMockRole,
+    login,
+    logout
+  } = useRoleContext();
+
   const [mockActive, setMockActive] = useState<boolean>(true);
   const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
-
-  // Read auth safely from TideCloak SDK
-  let tideAuth: any = {};
-  try {
-    tideAuth = useTideCloak();
-  } catch (e) {
-    // Graceful fallback if TideCloakProvider context is outside
-  }
-
-  const { login, logout, authenticated, getValueFromIdToken, hasRealmRole } = tideAuth;
-
-  const realUsername = getValueFromIdToken ? getValueFromIdToken("preferred_username") : null;
-  const isRealApprover = hasRealmRole ? hasRealmRole("approver") : false;
-  const isRealRequester = hasRealmRole ? hasRealmRole("requester") : true;
-
-  const displayUser = realUsername || currentUser || "acccuatoi (Quản trị viên)";
-  const displayRole = authenticated ? (isRealApprover ? "approver" : "requester") : currentRole;
+  const [statusError, setStatusError] = useState<boolean>(false);
 
   useEffect(() => {
     setMockActive(isMockMode());
     fetchStatus()
-      .then(s => setApiStatus(s))
-      .catch(() => setApiStatus({ mode: "simulated", policy: { dailyCapUsd: 5000, whitelist: [] } }));
+      .then((s) => {
+        setApiStatus(s);
+        setStatusError(false);
+      })
+      .catch((err) => {
+        console.warn("Could not fetch API status:", err);
+        setStatusError(true);
+      });
   }, []);
+
+  const isLiveMode = !mockActive && apiStatus?.mode === 'live';
+  const agentType = apiStatus?.agent;
 
   return (
     <>
       {mockActive && (
         <aside className={styles.bannerMock} role="region" aria-label="Mock Data Notice">
           <span>⚠️ MOCK DATA ACTIVE (NEXT_PUBLIC_USE_MOCK=true)</span>
-          <span style={{ fontWeight: 400, opacity: 0.85 }}>| Simulated TideCloak Quorum</span>
+          <span style={{ fontWeight: 400, opacity: 0.85 }}>| Simulated Offline Governance</span>
         </aside>
       )}
 
@@ -88,46 +85,89 @@ export default function Header({ currentRole = "approver", onRoleChange, current
           </div>
 
           <div className={styles.headerActions}>
-            {/* Honest Status Badge */}
-            <span
-              className={`${styles.statusBadge} ${
-                !mockActive && apiStatus?.mode === 'live' ? styles.statusLive : styles.statusSimulated
-              }`}
-            >
+            {/* Status Badges Group (Requirement B7) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Backend Mode Badge */}
               <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  backgroundColor: 'currentColor'
-                }}
-              />
-              {!mockActive && apiStatus?.mode === 'live' ? 'Live TideCloak' : 'Simulated'}
-            </span>
-
-            {/* Current User & Role Badge */}
-            <div className={styles.userBadge}>
-              <span>{displayUser}</span>
-              <span
-                className={`${styles.roleChip} ${
-                  displayRole === 'approver' ? styles.roleChipApprover : ''
+                className={`${styles.statusBadge} ${
+                  statusError
+                    ? styles.statusSimulated
+                    : isLiveMode
+                    ? styles.statusLive
+                    : styles.statusSimulated
                 }`}
+                title={
+                  statusError
+                    ? "Backend is offline (port 3001)"
+                    : isLiveMode
+                    ? "Connected to Live TideCloak verification on :3001"
+                    : "Simulated verification / Dev mode"
+                }
               >
-                {displayRole}
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    backgroundColor: 'currentColor'
+                  }}
+                />
+                {statusError
+                  ? 'Backend Offline'
+                  : isLiveMode
+                  ? 'Live TideCloak'
+                  : 'Simulated'}
               </span>
 
-              {/* Role Toggle for testing when in mock mode */}
-              {mockActive && onRoleChange && (
+              {/* Agent Type Badge */}
+              {apiStatus && (
+                <span
+                  className={styles.statusBadge}
+                  style={{
+                    background: agentType === 'llm' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                    color: agentType === 'llm' ? '#38bdf8' : '#94a3b8',
+                    border: agentType === 'llm' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(148, 163, 184, 0.25)'
+                  }}
+                  title={agentType === 'llm' ? "LLM Agent (Claude/Anthropic)" : "Mock Agent (keyword rules, no LLM API key)"}
+                >
+                  {agentType === 'llm' ? '🤖 LLM Agent' : '⚙️ Mock Agent (No AI)'}
+                </span>
+              )}
+            </div>
+
+            {/* Current User & Roles (Requirements B3, B12) */}
+            <div className={styles.userBadge}>
+              <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={currentUser}>
+                {currentUser}
+              </span>
+
+              {/* Show every role the user holds */}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                {userRoles.map((role) => (
+                  <span
+                    key={role}
+                    className={`${styles.roleChip} ${
+                      role === 'approver' ? styles.roleChipApprover : ''
+                    }`}
+                  >
+                    {role}
+                  </span>
+                ))}
+              </div>
+
+              {/* Role Toggle for testing (Only visible in mock mode or when not logged in) */}
+              {mockActive && (
                 <select
                   className={styles.roleSelect}
-                  value={currentRole}
-                  onChange={(e) => onRoleChange(e.target.value)}
+                  value={mockRole}
+                  onChange={(e) => setMockRole(e.target.value)}
                   aria-label="Switch Test Role"
-                  title="Switch role in mock mode to test approver vs requester permissions"
+                  title="Switch role in mock mode to test permissions"
                 >
-                  <option value="approver">Role: approver</option>
-                  <option value="requester">Role: requester</option>
-                  <option value="observer">Role: observer</option>
+                  <option value="approver">Test: Approver</option>
+                  <option value="requester">Test: Requester</option>
+                  <option value="both">Test: Both Roles</option>
+                  <option value="observer">Test: Observer</option>
                 </select>
               )}
             </div>
@@ -136,7 +176,7 @@ export default function Header({ currentRole = "approver", onRoleChange, current
             {authenticated ? (
               <button
                 type="button"
-                onClick={() => logout && logout()}
+                onClick={logout}
                 className={`${styles.btnAuth} ${styles.btnAuthOut}`}
               >
                 Log Out
@@ -144,8 +184,9 @@ export default function Header({ currentRole = "approver", onRoleChange, current
             ) : (
               <button
                 type="button"
-                onClick={() => login && login()}
-                className={styles.btnAuth}
+                onClick={login}
+                className={styles.btnPrimary}
+                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
               >
                 Log In
               </button>
